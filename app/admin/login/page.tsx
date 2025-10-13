@@ -34,8 +34,8 @@ export default function AdminLoginPage() {
 
       // ✅ Do NOT check admins table on the client.
       // Let the server-gated /admin/dashboard verify admin access using auth.uid().
-      router.replace('/admin/dashboard');
-      router.refresh();
+     router.replace('/admin/dashboard?ts=' + Date.now());
+     router.refresh();
     } catch (err: any) {
       setError(err?.message || 'Failed to log in');
     } finally {
