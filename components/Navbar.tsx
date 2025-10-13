@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import Image from 'next/image';
 
 // Load user menu on the client only (it reads Supabase session on the client)
 const UserMenu = dynamic(() => import('@/components/auth/UserMenu'), { ssr: false });
@@ -34,13 +35,17 @@ export default function Navbar() {
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Left: Brand */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2" onClick={close}>
-            {/* Replace with your logo image if you have one */}
-            <div className="h-8 w-8 rounded-lg bg-amber-500 grid place-items-center text-gray-900 font-extrabold">
-              M
-            </div>
-            <span className="text-lg font-bold tracking-tight">MugaWorld</span>
-          </Link>
+         <Link href="/" className="flex items-center gap-2" onClick={close}>
+  <Image
+    src="/PNG copy copy.png"   // ← your file inside /public
+    alt="MUGA WORLD"
+    width={32}
+    height={32}
+    className="rounded-lg"
+    priority
+  />
+  <span className="text-lg font-bold tracking-tight">MugaWorld</span>
+</Link>
         </div>
 
         {/* Center: Desktop nav */}
