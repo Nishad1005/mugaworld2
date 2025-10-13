@@ -1,47 +1,94 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertCircle } from 'lucide-react';
-import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // Pre-check: if already signed in AND is active admin -> go to dashboard
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: admin, error } = await supabase
+          .from('admins')
+          .select('id,is_active')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!error && admin?.is_active) {
+          router.replace('/admin/dashboard');
+          return;
+        }
+      }
+
+      // Only show an error from query string if NOT an admin
+      const qpErr = searchParams.get('err');
+      if (qpErr === 'no_admin_access') {
+        setErrMsg('You do not have admin access');
+      }
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setErrMsg(null);
+    setSubmitting(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
       if (authError) throw authError;
-      if (!data.user) throw new Error('Authentication failed');
+      if (!authData.user) throw new Error('Authentication failed');
 
-      // ✅ Do NOT check admins table on the client.
-      // Let the server-gated /admin/dashboard verify admin access using auth.uid().
-     router.replace('/admin/dashboard?ts=' + Date.now());
-     router.refresh();
+      const { data: admin, error: adminError } = await supabase
+        .from('admins')
+        .select('id,is_active')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (adminError || !admin?.is_active) {
+        // not an admin -> sign out and show message
+        await supabase.auth.signOut();
+        throw new Error('You do not have admin access');
+      }
+
+      router.replace('/admin/dashboard'); // success
     } catch (err: any) {
-      setError(err?.message || 'Failed to log in');
+      setErrMsg(err?.message || 'Failed to sign in');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <div className="h-10 w-40 rounded bg-gray-200 dark:bg-gray-800 animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-950 px-4">
@@ -57,10 +104,10 @@ export default function AdminLoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
+            {errMsg && (
               <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-md">
                 <AlertCircle className="h-4 w-4" />
-                {error}
+                {errMsg}
               </div>
             )}
 
@@ -73,8 +120,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loading}
-                autoComplete="email"
+                disabled={submitting}
               />
             </div>
 
@@ -87,24 +133,18 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={loading}
-                autoComplete="current-password"
+                disabled={submitting}
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Signing in…' : 'Sign In'}
             </Button>
-
-            <div className="text-center text-sm mt-2">
-              <Link href="/reset-password" className="text-gold hover:underline">
-                Forgot password?
-              </Link>
-            </div>
           </form>
         </CardContent>
       </Card>
     </div>
   );
 }
+
 
