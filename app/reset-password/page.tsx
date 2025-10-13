@@ -99,10 +99,12 @@ export default function ResetPasswordPage() {
   const onSubmitPassword = async (data: UpdatePasswordData) => {
     setIsLoading(true)
 
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: data.password,
-      })
+    toast({
+  title: 'Failed to update password',
+  description: error.message || 'An error occurred',
+  variant: 'destructive',
+})
+
 
       if (error) throw error
 
