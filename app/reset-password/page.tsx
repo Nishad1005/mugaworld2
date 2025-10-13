@@ -28,36 +28,69 @@ export default function ResetPasswordPage() {
   const [isUpdateMode, setIsUpdateMode] = useState(false)
   const supabase = createClient()
 
- useEffect(() => {
-  const type = searchParams.get('type')
-  const token = searchParams.get('access_token') || searchParams.get('token')
+  // ✅ Detect recovery token in both query and hash
+  useEffect(() => {
+    const qType = searchParams.get('type')
+    const qAccess = searchParams.get('access_token') || searchParams.get('token')
+    const qRefresh = searchParams.get('refresh_token') || ''
 
-  if (type === 'recovery' && token) {
-    supabase.auth.setSession({
-      access_token: token,
-      refresh_token: searchParams.get('refresh_token') || '',
+    const hash = typeof window !== 'undefined' ? window.location.hash : ''
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : '')
+    const hType = hashParams.get('type')
+    const hAccess = hashParams.get('access_token') || hashParams.get('token')
+    const hRefresh = hashParams.get('refresh_token') || ''
+
+    const type = qType || hType
+    const accessToken = qAccess || hAccess
+    const refreshToken = qRefresh || hRefresh
+
+    async function handleRecovery() {
+      if (type === 'recovery' && accessToken) {
+        await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+
+        // Clean URL
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href)
+          url.hash = ''
+          url.searchParams.set('type', 'recovery')
+          window.history.replaceState({}, '', url.toString())
+        }
+
+        setIsUpdateMode(true)
+      }
+    }
+
+    handleRecovery()
+  }, [searchParams, supabase])
+
+  // ✅ Fallback in case Supabase triggers event after redirect
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setIsUpdateMode(true)
+      }
     })
-    setIsUpdateMode(true)
-  }
-}, [searchParams, supabase])
+    return () => {
+      sub.subscription.unsubscribe()
+    }
+  }, [supabase])
 
-
+  // --- Forms ---
   const {
     register: registerEmail,
     handleSubmit: handleSubmitEmail,
     formState: { errors: errorsEmail },
-  } = useForm<ResetPasswordData>({
-    resolver: zodResolver(resetPasswordSchema),
-  })
+  } = useForm<ResetPasswordData>({ resolver: zodResolver(resetPasswordSchema) })
 
   const {
     register: registerPassword,
     handleSubmit: handleSubmitPassword,
     watch: watchPassword,
     formState: { errors: errorsPassword },
-  } = useForm<UpdatePasswordData>({
-    resolver: zodResolver(updatePasswordSchema),
-  })
+  } = useForm<UpdatePasswordData>({ resolver: zodResolver(updatePasswordSchema) })
 
   const newPassword = watchPassword('password')
   const passwordStrength = newPassword ? getPasswordStrength(newPassword) : null
@@ -96,7 +129,7 @@ export default function ResetPasswordPage() {
         title: 'Password updated!',
         description: 'Your password has been successfully updated.',
       })
-      router.push('/login'); // ✅ semicolon added
+      router.push('/login')
     } catch (error: any) {
       toast({
         title: 'Failed to update password',
@@ -108,6 +141,7 @@ export default function ResetPasswordPage() {
     }
   }
 
+  // --- Render ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-red-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
@@ -168,11 +202,7 @@ export default function ResetPasswordPage() {
                   We’ve sent a password reset link to your email. Click the link to reset your password.
                 </p>
               </div>
-              <Button
-                onClick={() => setEmailSent(false)}
-                variant="outline"
-                className="w-full"
-              >
+              <Button onClick={() => setEmailSent(false)} variant="outline" className="w-full">
                 Didn’t receive the email? Try again
               </Button>
             </div>
