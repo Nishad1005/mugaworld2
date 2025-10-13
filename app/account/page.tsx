@@ -27,6 +27,7 @@ export default function AccountPage() {
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [profileExists, setProfileExists] = useState<boolean>(true); // NEW: track if row exists
 
   // Load current user + profile
   useEffect(() => {
@@ -54,16 +55,24 @@ export default function AccountPage() {
         });
       }
 
-      const p: Profile = prof ?? {
-        id: user.id,
-        email: user.email ?? null,
-        full_name: null,
-        avatar_url: null,
-      };
+      // If missing, DO NOT fabricate a row (your table has NOT NULLs)
+      if (!prof) {
+        setProfileExists(false);
+        setProfile({
+          id: user.id,
+          email: user.email ?? null,
+          full_name: null,
+          avatar_url: null,
+        });
+        setFullName('');
+        setAvatarUrl(null);
+      } else {
+        setProfileExists(true);
+        setProfile(prof as Profile);
+        setFullName(prof.full_name ?? '');
+        setAvatarUrl(prof.avatar_url ?? null);
+      }
 
-      setProfile(p);
-      setFullName(p.full_name ?? '');
-      setAvatarUrl(p.avatar_url ?? null);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,15 +80,31 @@ export default function AccountPage() {
 
   const onSave = async () => {
     if (!profile) return;
+
+    if (!profileExists) {
+      // Prevent hidden failures when the row is missing
+      toast({
+        title: 'Profile not found',
+        description:
+          'Your profile record does not exist yet. Please ask an admin to create your profile row (including required fields like account_type) before you can save.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
 
-    const { error } = await supabase
+    // Ask Supabase to return the updated row; if no row, data will be null
+    const { data, error } = await supabase
       .from('profiles')
       .update({
         full_name: fullName || null,
         avatar_url: avatarUrl || null,
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', profile.id);
+      .eq('id', profile.id)
+      .select('id')
+      .maybeSingle();
 
     setSaving(false);
 
@@ -87,6 +112,16 @@ export default function AccountPage() {
       toast({
         title: 'Could not save profile',
         description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!data) {
+      toast({
+        title: 'Profile row missing',
+        description:
+          'No profile row was updated. Ask an admin to create your profile record first.',
         variant: 'destructive',
       });
       return;
@@ -101,6 +136,16 @@ export default function AccountPage() {
     const file = e.target.files?.[0];
     if (!file || !profile) return;
 
+    if (!profileExists) {
+      toast({
+        title: 'Profile not found',
+        description:
+          'Please ask an admin to create your profile record before uploading an avatar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const MAX_MB = 5;
     if (file.size > MAX_MB * 1024 * 1024) {
       toast({
@@ -114,6 +159,7 @@ export default function AccountPage() {
     setUploading(true);
     try {
       const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      // IMPORTANT: path must start with <uid>/ to satisfy your storage RLS
       const path = `${profile.id}/avatar.${ext}`;
 
       // Upload (upsert into avatars bucket)
@@ -123,9 +169,10 @@ export default function AccountPage() {
 
       if (upErr) throw upErr;
 
-      // Get a public URL (works because we made the bucket public-read)
+      // Get a public URL (bucket is public-read)
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      setAvatarUrl(data.publicUrl);
+      const bust = `?t=${Date.now()}`; // cache-bust so it refreshes immediately
+      setAvatarUrl((data.publicUrl ?? '') + bust);
 
       toast({ title: 'Avatar updated' });
     } catch (err: any) {
@@ -189,14 +236,14 @@ export default function AccountPage() {
             type="file"
             accept="image/*"
             onChange={onUploadAvatar}
-            disabled={uploading}
+            disabled={uploading || !profileExists}
           />
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="secondary"
               onClick={onRemoveAvatar}
-              disabled={uploading}
+              disabled={uploading || !profileExists}
             >
               Remove
             </Button>
@@ -204,6 +251,11 @@ export default function AccountPage() {
           <p className="text-xs text-gray-500">
             Recommended: square image, &lt; 5MB.
           </p>
+          {!profileExists && (
+            <p className="text-xs text-red-500">
+              Your profile record is missing. Ask an admin to create it before uploading an avatar.
+            </p>
+          )}
         </div>
       </div>
 
@@ -216,6 +268,7 @@ export default function AccountPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Your name"
+            disabled={!profileExists}
           />
         </div>
 
@@ -226,7 +279,7 @@ export default function AccountPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button onClick={onSave} disabled={saving}>
+        <Button onClick={onSave} disabled={saving || !profileExists}>
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
         <Button
@@ -241,3 +294,4 @@ export default function AccountPage() {
     </div>
   );
 }
+
