@@ -28,16 +28,19 @@ export default function ResetPasswordPage() {
   const [isUpdateMode, setIsUpdateMode] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    const type = searchParams.get('type')
-    const token =
-      searchParams.get('access_token') ||
-      searchParams.get('token') ||
-      searchParams.get('recovery_token')
-    if (type === 'recovery' && token) {
-      setIsUpdateMode(true)
-    }
-  }, [searchParams])
+ useEffect(() => {
+  const type = searchParams.get('type')
+  const token = searchParams.get('access_token') || searchParams.get('token')
+
+  if (type === 'recovery' && token) {
+    supabase.auth.setSession({
+      access_token: token,
+      refresh_token: searchParams.get('refresh_token') || '',
+    })
+    setIsUpdateMode(true)
+  }
+}, [searchParams, supabase])
+
 
   const {
     register: registerEmail,
