@@ -52,12 +52,18 @@ export default function ResetPasswordPage() {
         })
 
         // Clean URL
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href)
-          url.hash = ''
-          url.searchParams.set('type', 'recovery')
-          window.history.replaceState({}, '', url.toString())
-        }
+       // ✅ Clean URL & keep proper query param for re-render
+if (typeof window !== 'undefined') {
+  const url = new URL(window.location.href)
+  url.hash = ''
+  if (!url.searchParams.has('type')) {
+    url.searchParams.append('type', 'recovery')
+  }
+  window.history.replaceState({}, '', url.toString())
+  // Force a short delay to ensure Next.js re-renders with new query param
+  setTimeout(() => setIsUpdateMode(true), 100)
+}
+
 
         setIsUpdateMode(true)
       }
