@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -23,33 +24,20 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) throw authError;
+      if (!data.user) throw new Error('Authentication failed');
 
-      if (!authData.user) {
-        throw new Error('Authentication failed');
-      }
-
-      const { data: adminData, error: adminError } = await supabase
-        .from('admins')
-        .select('*, admin_roles(*)')
-        .eq('id', authData.user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (adminError || !adminData) {
-        await supabase.auth.signOut();
-        throw new Error('You do not have admin access');
-      }
-
-      router.push('/admin/dashboard');
+      // ✅ Do NOT check admins table on the client.
+      // Let the server-gated /admin/dashboard verify admin access using auth.uid().
+      router.replace('/admin/dashboard');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Failed to log in');
+      setError(err?.message || 'Failed to log in');
     } finally {
       setLoading(false);
     }
@@ -86,6 +74,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
 
@@ -99,15 +88,23 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
+
+            <div className="text-center text-sm mt-2">
+              <Link href="/reset-password" className="text-gold hover:underline">
+                Forgot password?
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
     </div>
   );
 }
+
