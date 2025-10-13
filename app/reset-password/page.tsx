@@ -97,26 +97,29 @@ export default function ResetPasswordPage() {
 
   // ✅ step 2: update password (after recovery link)
   const onSubmitPassword = async (data: UpdatePasswordData) => {
-    setIsLoading(true)
+  setIsLoading(true);
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: data.password,
+    });
+
+    if (error) throw error;
 
     toast({
-  title: 'Failed to update password',
-  description: error.message || 'An error occurred',
-  variant: 'destructive',
-})
+      title: 'Password updated!',
+      description: 'Your password has been successfully updated.',
+    });
 
-
-      if (error) throw error
-
-      toast({
-        title: 'Password updated!',
-        description: 'Your password has been successfully updated.',
-      })
-
-      router.push('/login')
-    } catch (error: any) {
-      toast({
-        title: 'Failed to update password',
-        description: error.message || 'An error occurred',
-        variant: 'destructi
+    router.push('/login'); // ✅ semicolon here
+  } catch (error: any) {
+    toast({
+      title: 'Failed to update password',
+      description: error?.message || 'An error occurred',
+      variant: 'destructive', // ✅ string closed properly
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
