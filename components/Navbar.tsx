@@ -1,110 +1,127 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
-import { Menu, X, ShoppingCart } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-export function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+// Load user menu on the client only (it reads Supabase session on the client)
+const UserMenu = dynamic(() => import('@/components/auth/UserMenu'), { ssr: false });
 
-  const links = [
-    { href: '/', label: 'Home' },
-    { href: '/shop', label: 'Shop' },
-    { href: '/services', label: 'Services' },
-    { href: '/about', label: 'About Us' },
-    { href: '/contact', label: 'Contact' },
-  ];
+/**
+ * Simple site links. Add/remove to match your routes.
+ * If a route doesn't exist in your app, you can safely delete it here.
+ */
+const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/shop', label: 'Shop' },
+  { href: '/services', label: 'Services' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+
+export default function Navbar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const close = () => setOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          <Link href="/" className="flex items-center space-x-3">
-            <img src="/PNG copy copy.png" alt="MUGA WORLD" className="w-16 h-16 object-contain" />
-
-            <div className="hidden sm:block">
-              <div className="text-xl font-bold text-gray-900 dark:text-white">MUGA WORLD</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">Crafting Futures</div>
+    <header className="sticky top-0 z-40 w-full border-b border-gray-200/70 dark:border-gray-800/80 bg-white/80 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 supports-[backdrop-filter]:dark:bg-gray-950/60">
+      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Left: Brand */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2" onClick={close}>
+            {/* Replace with your logo image if you have one */}
+            <div className="h-8 w-8 rounded-lg bg-amber-500 grid place-items-center text-gray-900 font-extrabold">
+              M
             </div>
+            <span className="text-lg font-bold tracking-tight">MugaWorld</span>
           </Link>
-
-          <div className="hidden md:flex items-center space-x-4">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-700 dark:text-gray-300 hover:text-gold transition-colors font-medium"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <Link href="/cart">
-              <Button variant="outline" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" className="font-medium">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-gold hover:bg-gold/90 text-gray-900 font-medium">
-                Sign Up
-              </Button>
-            </Link>
-            <ThemeToggle />
-          </div>
-
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
         </div>
 
-        {isOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            {links.map((link) => (
+        {/* Center: Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
               <Link
-                key={link.href}
-                href={link.href}
-                className="block py-2 px-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                onClick={() => setIsOpen(false)}
+                key={l.href}
+                href={l.href}
+                className={[
+                  'px-3 py-2 rounded-md text-sm transition',
+                  active
+                    ? 'text-gray-900 dark:text-gray-100 font-medium bg-gray-100 dark:bg-gray-800'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900/60',
+                ].join(' ')}
               >
-                {link.label}
+                {l.label}
               </Link>
-            ))}
-            <Link
-              href="/cart"
-              className="block py-2 px-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-              onClick={() => setIsOpen(false)}
-            >
-              Cart
-            </Link>
-            <Link
-              href="/login"
-              className="block py-2 px-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-              onClick={() => setIsOpen(false)}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="block py-2 px-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-              onClick={() => setIsOpen(false)}
-            >
-              Sign Up
-            </Link>
-            <div className="px-4 py-2">
-              <ThemeToggle />
-            </div>
+            );
+          })}
+        </div>
+
+        {/* Right: Desktop actions */}
+        <div className="hidden md:flex items-center gap-3">
+          <UserMenu />
+          <ThemeToggle />
+        </div>
+
+        {/* Mobile: hamburger */}
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setOpen((s) => !s)}
+            aria-label="Toggle menu"
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      </nav>
+
+      {/* Mobile panel */}
+      <div
+        id="mobile-menu"
+        className={[
+          'md:hidden overflow-hidden border-t border-gray-200/70 dark:border-gray-800/80 transition-[max-height,opacity] duration-300 ease-out',
+          open ? 'max-h-[60vh] opacity-100' : 'max-h-0 opacity-0',
+        ].join(' ')}
+      >
+        <div className="px-4 py-3 space-y-1 bg-white/90 dark:bg-gray-950/90 backdrop-blur">
+          {NAV_LINKS.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={close}
+                className={[
+                  'block px-3 py-2 rounded-md text-sm transition',
+                  active
+                    ? 'text-gray-900 dark:text-gray-100 font-medium bg-gray-100 dark:bg-gray-800'
+                    : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900/60',
+                ].join(' ')}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+
+          {/* Mobile user menu */}
+          <div className="pt-2">
+            <UserMenu />
           </div>
-        )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }
+
