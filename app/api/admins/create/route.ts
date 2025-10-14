@@ -13,16 +13,18 @@ type AdminProfileRPC = {
 async function assertSuperAdmin() {
   const supabase = await createServerClient()
 
+  // Do NOT type rpc<...>. Put the type on .single<...>() instead.
   const { data, error } = await supabase
-    //            ⬇ Result type            ⬇ No-params type
-    .rpc<AdminProfileRPC, Record<string, never>>('get_admin_profile')
-    .single()
+    .rpc('get_admin_profile')
+    .single<AdminProfileRPC>()
 
   if (error || !data || !data.is_active || data.role_name !== 'super_admin') {
     return null
   }
+
   return { id: data.id, role_name: 'super_admin' as const, is_active: true as const }
 }
+
 export async function POST(req: Request) {
   try {
     const me = await assertSuperAdmin()
