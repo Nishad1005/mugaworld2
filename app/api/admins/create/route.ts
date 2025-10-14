@@ -3,13 +3,26 @@ import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
+// 1) Add a type describing what your RPC returns
+type AdminProfileRPC = {
+  id: string
+  role_name: 'super_admin' | 'admin' | 'cashier' | string | null
+  is_active: boolean | null
+}
+
 async function assertSuperAdmin() {
   const supabase = await createServerClient()
-  const { data, error } = await supabase.rpc('get_admin_profile').single()
+
+  // 2) Tell supabase what the RPC returns, then call .single()
+  const { data, error } = await supabase
+    .rpc<AdminProfileRPC>('get_admin_profile')
+    .single()
+
+  // 3) Narrow safely — optional chaining + boolean cast
   if (error || !data || !data.is_active || data.role_name !== 'super_admin') {
     return null
   }
-  return data as { id: string; role_name: 'super_admin'; is_active: boolean }
+  return { id: data.id, role_name: 'super_admin' as const, is_active: true as const }
 }
 
 export async function POST(req: Request) {
@@ -25,7 +38,7 @@ export async function POST(req: Request) {
 
     const svc = createServiceClient()
 
-    // 1) Create Auth user
+    // create auth user
     const { data: authData, error: authErr } = await svc.auth.admin.createUser({
       email,
       password,
@@ -34,19 +47,16 @@ export async function POST(req: Request) {
     if (authErr) return NextResponse.json({ error: authErr.message }, { status: 400 })
     const userId = authData.user.id
 
-    // 2) Insert into public.admins
-    const { error: insertErr } = await svc
-      .from('admins')
-      .insert({
-        id: userId,
-        email,
-        full_name,
-        role_id,
-        is_active: true,
-        created_by: me.id,
-      })
+    // insert admins row
+    const { error: insertErr } = await svc.from('admins').insert({
+      id: userId,
+      email,
+      full_name,
+      role_id,
+      is_active: true,
+      created_by: me.id,
+    })
     if (insertErr) {
-      // rollback auth user on failure
       await svc.auth.admin.deleteUser(userId).catch(() => {})
       return NextResponse.json({ error: insertErr.message }, { status: 400 })
     }
@@ -56,3 +66,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message || 'Internal error' }, { status: 500 })
   }
 }
+
