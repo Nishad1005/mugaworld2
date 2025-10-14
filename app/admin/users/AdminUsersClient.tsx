@@ -1,350 +1,434 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Plus, Edit, Trash2, Shield, AlertCircle } from 'lucide-react';
-import type { AdminProfile, AdminRole, Admin } from '@/lib/admin/types';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Loader as Loader2, Plus, Trash2, Pencil, RotateCcw } from 'lucide-react'
 
-interface AdminUsersClientProps {
-  profile: AdminProfile;
+type Role = { id: string; name: string }
+type AdminRow = {
+  id: string
+  email: string
+  full_name: string | null
+  role_id: string | null
+  is_active: boolean | null
+  created_at: string | null
+  admin_roles?: { name: string } | null
 }
 
-export default function AdminUsersClient({ profile }: AdminUsersClientProps) {
-  const router = useRouter();
-  const supabase = createClient();
+type CreateForm = {
+  email: string
+  password: string
+  full_name: string
+  role_id: string
+}
 
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [roles, setRoles] = useState<AdminRole[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+type EditForm = {
+  email: string
+  full_name: string
+  role_id: string
+  is_active?: boolean
+}
 
-  const [formData, setFormData] = useState({
+export default function AdminUsersClient() {
+  const supabase = useMemo(() => createClient(), [])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [admins, setAdmins] = useState<AdminRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isBusy, setIsBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Create dialog state
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState<CreateForm>({
     email: '',
     password: '',
     full_name: '',
     role_id: '',
-  });
+  })
+
+  // Edit dialog state
+  const [editing, setEditing] = useState<AdminRow | null>(null)
+  const [editForm, setEditForm] = useState<EditForm>({ email: '', full_name: '', role_id: '' })
+
+  const load = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [{ data: rolesData, error: rolesErr }, { data: adminsData, error: adminsErr }] =
+        await Promise.all([
+          supabase.from('admin_roles').select('id,name').order('name', { ascending: true }),
+          supabase
+            .from('admins')
+            .select('id,email,full_name,role_id,is_active,created_at,admin_roles(name)')
+            .order('created_at', { ascending: false }),
+        ])
+
+      if (rolesErr) throw rolesErr
+      if (adminsErr) throw adminsErr
+
+      setRoles(rolesData ?? [])
+      setAdmins(adminsData ?? [])
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to load admins/roles')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const loadData = async () => {
-    setLoading(true);
+  const roleName = (role_id: string | null | undefined) => {
+    const r = roles.find((x) => x.id === role_id)
+    return r?.name ?? editing?.admin_roles?.name ?? '—'
+  }
+
+  // ---------- Create ----------
+  const onCreate = async () => {
+    setIsBusy(true)
+    setError(null)
     try {
-      const [adminsResult, rolesResult] = await Promise.all([
-        supabase.from('admins').select('*, admin_roles(*)').order('created_at', { ascending: false }),
-        supabase.from('admin_roles').select('*').order('name'),
-      ]);
-
-      if (adminsResult.data) setAdmins(adminsResult.data as any);
-      if (rolesResult.data) setRoles(rolesResult.data);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load admins');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      if (editingAdmin) {
-        const { error } = await supabase
-          .from('admins')
-          .update({
-            email: formData.email,
-            full_name: formData.full_name,
-            role_id: formData.role_id,
-          })
-          .eq('id', editingAdmin.id);
-
-        if (error) throw error;
-        toast.success('Admin updated successfully');
-      } else {
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          email_confirm: true,
-        });
-
-        if (authError) throw authError;
-
-        const { error: adminError } = await supabase.from('admins').insert({
-          id: authData.user.id,
-          email: formData.email,
-          full_name: formData.full_name,
-          role_id: formData.role_id,
-          created_by: profile.id,
-        });
-
-        if (adminError) throw adminError;
-        toast.success('Admin created successfully');
+      if (!createForm.email || !createForm.password || !createForm.full_name || !createForm.role_id) {
+        throw new Error('Please fill all fields')
       }
+      const res = await fetch('/api/admins/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to create admin')
 
-      setDialogOpen(false);
-      resetForm();
-      loadData();
-    } catch (error: any) {
-      console.error('Error saving admin:', error);
-      toast.error(error.message || 'Failed to save admin');
+      setShowCreate(false)
+      setCreateForm({ email: '', password: '', full_name: '', role_id: '' })
+      await load()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to create')
+    } finally {
+      setIsBusy(false)
     }
-  };
+  }
 
-  const handleDelete = async (adminId: string) => {
-    if (!confirm('Are you sure you want to delete this admin?')) return;
+  // ---------- Edit ----------
+  const openEdit = (row: AdminRow) => {
+    setEditing(row)
+    setEditForm({
+      email: row.email,
+      full_name: row.full_name || '',
+      role_id: row.role_id || '',
+      is_active: !!row.is_active,
+    })
+  }
 
+  const onUpdate = async () => {
+    if (!editing) return
+    setIsBusy(true)
+    setError(null)
     try {
-      const { error } = await supabase.from('admins').delete().eq('id', adminId);
+      const res = await fetch(`/api/admins/${editing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: editForm.email,
+          full_name: editForm.full_name,
+          role_id: editForm.role_id,
+          is_active: editForm.is_active,
+        }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to update admin')
 
-      if (error) throw error;
-
-      await supabase.auth.admin.deleteUser(adminId);
-
-      toast.success('Admin deleted successfully');
-      loadData();
-    } catch (error: any) {
-      console.error('Error deleting admin:', error);
-      toast.error(error.message || 'Failed to delete admin');
+      setEditing(null)
+      await load()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to update')
+    } finally {
+      setIsBusy(false)
     }
-  };
+  }
 
-  const handleToggleActive = async (admin: Admin) => {
+  // ---------- Toggle ----------
+  const onToggle = async (row: AdminRow) => {
+    setIsBusy(true)
+    setError(null)
     try {
-      const { error } = await supabase
-        .from('admins')
-        .update({ is_active: !admin.is_active })
-        .eq('id', admin.id);
+      const res = await fetch(`/api/admins/${row.id}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !row.is_active }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to toggle admin')
 
-      if (error) throw error;
-
-      toast.success(`Admin ${admin.is_active ? 'deactivated' : 'activated'} successfully`);
-      loadData();
-    } catch (error: any) {
-      console.error('Error toggling admin status:', error);
-      toast.error(error.message || 'Failed to update admin status');
+      await load()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to toggle')
+    } finally {
+      setIsBusy(false)
     }
-  };
+  }
 
-  const openEditDialog = (admin: Admin) => {
-    setEditingAdmin(admin);
-    setFormData({
-      email: admin.email,
-      password: '',
-      full_name: admin.full_name,
-      role_id: admin.role_id,
-    });
-    setDialogOpen(true);
-  };
+  // ---------- Delete ----------
+  const onDelete = async (row: AdminRow) => {
+    if (!confirm(`Delete admin ${row.email}? This also removes the Auth user.`)) return
+    setIsBusy(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admins/${row.id}`, { method: 'DELETE' })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to delete admin')
 
-  const resetForm = () => {
-    setEditingAdmin(null);
-    setFormData({
-      email: '',
-      password: '',
-      full_name: '',
-      role_id: '',
-    });
-  };
+      await load()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to delete')
+    } finally {
+      setIsBusy(false)
+    }
+  }
 
+  // ---------- UI ----------
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-950">
-      <div className="border-b bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.push('/admin/dashboard')}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Shield className="h-6 w-6 text-amber-600" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Manage Admins</h1>
-            </div>
-            <Dialog open={dialogOpen} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Admin
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingAdmin ? 'Edit Admin' : 'Create New Admin'}</DialogTitle>
-                  <DialogDescription>
-                    {editingAdmin
-                      ? 'Update admin user details and permissions'
-                      : 'Create a new admin user with specific role and permissions'}
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      disabled={!!editingAdmin}
-                      required
-                    />
-                  </div>
-
-                  {!editingAdmin && (
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      id="full_name"
-                      type="text"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role_id} onValueChange={(value) => setFormData({ ...formData, role_id: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.name.replace('_', ' ').toUpperCase()} - {role.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button type="submit" className="flex-1">
-                      {editingAdmin ? 'Update' : 'Create'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setDialogOpen(false);
-                        resetForm();
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Manage Admins</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => load()}
+            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+            disabled={isLoading || isBusy}
+            title="Reload"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reload
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-black px-3 py-2 text-sm text-white hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            New Admin
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-600 dark:text-gray-400">Loading admins...</p>
-            </CardContent>
-          </Card>
-        ) : admins.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-gray-600 dark:text-gray-400">No admins found. Create your first admin user.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {admins.map((admin) => (
-              <Card key={admin.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-lg">{admin.full_name}</CardTitle>
-                        <Badge variant={admin.is_active ? 'default' : 'secondary'}>
-                          {admin.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                        {admin.role && (
-                          <Badge variant="outline">
-                            {admin.role.name.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        )}
-                      </div>
-                      <CardDescription>{admin.email}</CardDescription>
-                      {admin.role && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                          {admin.role.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleToggleActive(admin)}
-                        disabled={admin.id === profile.id}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading…
+        </div>
+      ) : admins.length === 0 ? (
+        <div className="rounded-lg border p-6 text-sm text-gray-600">No admins yet.</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-gray-600">Name</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600">Email</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600">Role</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600">Active</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {admins.map((a) => (
+                <tr key={a.id} className="border-t">
+                  <td className="px-3 py-2">{a.full_name || '—'}</td>
+                  <td className="px-3 py-2">{a.email}</td>
+                  <td className="px-3 py-2">{a.admin_roles?.name || roleName(a.role_id)}</td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={() => onToggle(a)}
+                      className={`rounded-full px-2 py-1 text-xs ${
+                        a.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                      }`}
+                      disabled={isBusy}
+                      title="Toggle active"
+                    >
+                      {a.is_active ? 'Active' : 'Inactive'}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEdit(a)}
+                        className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 hover:bg-gray-50"
+                        disabled={isBusy}
                       >
-                        <Shield className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => openEditDialog(admin)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(admin.id)}
-                        disabled={admin.id === profile.id}
+                        <Pencil className="h-4 w-4" /> Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(a)}
+                        className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-red-600 hover:bg-red-50"
+                        disabled={isBusy}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
                     </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Create Dialog */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Create Admin</h2>
+              <button onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
+                Close
+              </button>
+            </div>
+            <div className="space-y-4">
+              <Field label="Full name">
+                <input
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={createForm.full_name}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, full_name: e.target.value }))}
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  type="email"
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
+                />
+              </Field>
+              <Field label="Password">
+                <input
+                  type="password"
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, password: e.target.value }))}
+                />
+              </Field>
+              <Field label="Role">
+                <select
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={createForm.role_id}
+                  onChange={(e) => setCreateForm((s) => ({ ...s, role_id: e.target.value }))}
+                >
+                  <option value="">Select role</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
+                disabled={isBusy}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onCreate}
+                className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
+                disabled={isBusy}
+              >
+                {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Create
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Edit Dialog */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Edit Admin</h2>
+              <button onClick={() => setEditing(null)} className="text-sm text-gray-500">
+                Close
+              </button>
+            </div>
+            <div className="space-y-4">
+              <Field label="Full name">
+                <input
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm((s) => ({ ...s, full_name: e.target.value }))}
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  type="email"
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((s) => ({ ...s, email: e.target.value }))}
+                />
+              </Field>
+              <Field label="Role">
+                <select
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={editForm.role_id}
+                  onChange={(e) => setEditForm((s) => ({ ...s, role_id: e.target.value }))}
+                >
+                  <option value="">Select role</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Active">
+                <input
+                  type="checkbox"
+                  checked={!!editForm.is_active}
+                  onChange={(e) => setEditForm((s) => ({ ...s, is_active: e.target.checked }))}
+                />
+              </Field>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setEditing(null)}
+                className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50"
+                disabled={isBusy}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onUpdate}
+                className="inline-flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
+                disabled={isBusy}
+              >
+                {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }
+
+function Field(props: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-sm">
+      <div className="mb-1 text-gray-600">{props.label}</div>
+      {props.children}
+    </label>
+  )
+}
+
