@@ -18,7 +18,7 @@ type AdminRow = {
 
 type CreateForm = {
   email: string
-  password: string
+  password?: string
   full_name: string
   role_id: string
 }
@@ -68,7 +68,6 @@ export default function AdminUsersClient() {
       if (adminsErr) throw adminsErr
 
       setRoles(rolesData ?? [])
-      // No shape transform needed; types now accept array/object/null
       setAdmins((adminsData ?? []) as AdminRow[])
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load admins/roles')
@@ -100,17 +99,25 @@ export default function AdminUsersClient() {
     setIsBusy(true)
     setError(null)
     try {
-      if (!createForm.email || !createForm.password || !createForm.full_name || !createForm.role_id) {
-        throw new Error('Please fill all fields')
+      if (!createForm.email || !createForm.full_name || !createForm.role_id) {
+        throw new Error('Please fill name, email and role')
       }
+
+      // Call our server route (uses service role & upsert)
       const res = await fetch('/api/admins/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm),
+        body: JSON.stringify({
+          email: createForm.email.trim(),
+          full_name: createForm.full_name.trim(),
+          role_id: createForm.role_id, // must be UUID from admin_roles.id
+          is_active: true,
+        }),
       })
       const payload = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(payload?.error || 'Failed to create admin')
 
+      // Close modal, reset form, then REFRESH the list so the new row appears
       setShowCreate(false)
       setCreateForm({ email: '', password: '', full_name: '', role_id: '' })
       await load()
@@ -182,7 +189,7 @@ export default function AdminUsersClient() {
 
   // ---------- Delete ----------
   const onDelete = async (row: AdminRow) => {
-    if (!confirm(`Delete admin ${row.email}? This also removes the Auth user.`)) return
+    if (!confirm(`Delete admin ${row.email}? This also marks the Auth user.`)) return
     setIsBusy(true)
     setError(null)
     try {
@@ -317,11 +324,11 @@ export default function AdminUsersClient() {
                   onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
                 />
               </Field>
-              <Field label="Password">
+              <Field label="Password (optional)">
                 <input
                   type="password"
                   className="w-full rounded-lg border px-3 py-2"
-                  value={createForm.password}
+                  value={createForm.password ?? ''}
                   onChange={(e) => setCreateForm((s) => ({ ...s, password: e.target.value }))}
                 />
               </Field>
@@ -441,4 +448,5 @@ function Field(props: { label: string; children: React.ReactNode }) {
     </label>
   )
 }
+
 
