@@ -13,18 +13,16 @@ type AdminProfileRPC = {
 async function assertSuperAdmin() {
   const supabase = await createServerClient()
 
-  // 2) Tell supabase what the RPC returns, then call .single()
   const { data, error } = await supabase
-    .rpc<AdminProfileRPC>('get_admin_profile')
+    //            ⬇ Result type            ⬇ No-params type
+    .rpc<AdminProfileRPC, Record<string, never>>('get_admin_profile')
     .single()
 
-  // 3) Narrow safely — optional chaining + boolean cast
   if (error || !data || !data.is_active || data.role_name !== 'super_admin') {
     return null
   }
   return { id: data.id, role_name: 'super_admin' as const, is_active: true as const }
 }
-
 export async function POST(req: Request) {
   try {
     const me = await assertSuperAdmin()
