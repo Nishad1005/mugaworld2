@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import ProductsClient from './ProductsClient';
+import { getAdminProfile, checkPermission } from '@/lib/admin/permissions'
 
 type Product = {
   id: string;
@@ -19,6 +20,17 @@ type Product = {
   is_active: boolean | null;
   created_at: string | null;
 };
+
+export default async function AdminProductsPage() {
+  const profile = await getAdminProfile()
+  if (!profile || !profile.is_active) redirect('/admin/login')
+
+  const allowed = await checkPermission('edit_products')
+  if (!allowed) redirect('/admin/dashboard')
+
+  // client is self-loading; no props
+  return <ProductsClient />
+}
 
 export default async function ProductsPage() {
   const cookieStore = cookies();
