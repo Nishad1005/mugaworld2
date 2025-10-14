@@ -12,7 +12,8 @@ type AdminRow = {
   role_id: string | null
   is_active: boolean | null
   created_at: string | null
-  admin_roles?: { name: string } | null
+  // Accept array (what your query is returning) OR single object OR null
+  admin_roles?: { name: string }[] | { name: string } | null
 }
 
 type CreateForm = {
@@ -67,7 +68,8 @@ export default function AdminUsersClient() {
       if (adminsErr) throw adminsErr
 
       setRoles(rolesData ?? [])
-      setAdmins(adminsData ?? [])
+      // No shape transform needed; types now accept array/object/null
+      setAdmins((adminsData ?? []) as AdminRow[])
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load admins/roles')
     } finally {
@@ -80,9 +82,17 @@ export default function AdminUsersClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const roleName = (role_id: string | null | undefined) => {
+  const roleNameFromId = (role_id: string | null | undefined) => {
     const r = roles.find((x) => x.id === role_id)
-    return r?.name ?? editing?.admin_roles?.name ?? '—'
+    return r?.name
+  }
+
+  // Safely read role name regardless of shape
+  const displayRoleName = (row: AdminRow) => {
+    const ar = row.admin_roles
+    if (!ar) return roleNameFromId(row.role_id) ?? '—'
+    if (Array.isArray(ar)) return ar[0]?.name ?? roleNameFromId(row.role_id) ?? '—'
+    return ar.name ?? roleNameFromId(row.role_id) ?? '—'
   }
 
   // ---------- Create ----------
@@ -243,7 +253,7 @@ export default function AdminUsersClient() {
                 <tr key={a.id} className="border-t">
                   <td className="px-3 py-2">{a.full_name || '—'}</td>
                   <td className="px-3 py-2">{a.email}</td>
-                  <td className="px-3 py-2">{a.admin_roles?.name || roleName(a.role_id)}</td>
+                  <td className="px-3 py-2">{displayRoleName(a)}</td>
                   <td className="px-3 py-2">
                     <button
                       onClick={() => onToggle(a)}
