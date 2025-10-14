@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // ⬅️ add useEffect
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -36,6 +36,29 @@ export default function AccountPageClient({ profile, user }: AccountPageClientPr
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const supabase = createClient()
+
+  // ✅ Ensure a profile row exists for this user (created server-side if missing)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/profile/ensure', { method: 'POST', cache: 'no-store' })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          if (!cancelled) console.warn('ensure profile failed', body)
+        } else {
+          const body = await res.json().catch(() => ({}))
+          if (body?.created && !cancelled) {
+            // Refresh server components (e.g., header user menu) without navigation
+            try { router.refresh() } catch {}
+          }
+        }
+      } catch (e) {
+        if (!cancelled) console.warn('ensure profile exception', e)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [router])
 
   const {
     register,
@@ -319,3 +342,4 @@ export default function AccountPageClient({ profile, user }: AccountPageClientPr
     </div>
   )
 }
+
