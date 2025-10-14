@@ -98,13 +98,22 @@ export async function POST(req: Request) {
     }
 
     // 4) Insert into public.admins (service key bypasses RLS)
-    const { error: insertErr } = await svc.from('admins').insert({
-      id: userId,
+ const { error: upsertErr } = await svc
+  .from('admins')
+  .upsert(
+    {
+      id: userId,                 // MUST be the Auth user id
       email,
       full_name: full_name || null,
       role_id,
-      is_active: !!is_active,
-    })
+      is_active: true,            // default to active on create
+    },
+    { onConflict: 'id' }
+  )
+if (upsertErr) {
+  return NextResponse.json({ error: `upsert admins: ${upsertErr.message}` }, { status: 400 })
+}
+
     if (insertErr) {
       // If row already exists, return 200 idempotently
       const dup = insertErr.message?.toLowerCase().includes('duplicate')
