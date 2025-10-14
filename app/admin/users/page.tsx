@@ -18,3 +18,4 @@ export default async function AdminUsersPage() {
   // AdminUsersClient is self-loading; do NOT pass props
   return <AdminUsersClient />
 }
+
