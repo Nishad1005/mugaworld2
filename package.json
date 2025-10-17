@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "browserslist:update": "npx --yes update-browserslist-db@latest"
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
