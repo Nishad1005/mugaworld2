@@ -17,30 +17,42 @@ export default function AdminLoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // may be undefined at build type-check, so guard below
   const supabase = createClient();
 
   // Pre-check: if already signed in AND is active admin -> go to dashboard
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        const { data: admin, error } = await supabase
-          .from('admins')
-          .select('id,is_active')
-          .eq('id', user.id)
-          .maybeSingle();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (!error && admin?.is_active) {
-          router.replace('/admin/dashboard');
-          return;
+        if (user) {
+          const { data: admin, error } = await supabase
+            .from('admins')
+            .select('id,is_active')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (!error && admin?.is_active) {
+            router.replace('/admin/dashboard');
+            return;
+          }
         }
+      } catch {
+        // ignore precheck errors; fall through to login form
       }
 
-      // Only show an error from query string if NOT an admin
-      const qpErr = searchParams.get('err');
+      // Read error from query string **safely** in CSR/SSR
+      let qpErr: string | null = null;
+      if (typeof window !== 'undefined') {
+        qpErr = new URLSearchParams(window.location.search).get('err');
+      } else if (searchParams && typeof (searchParams as any).get === 'function') {
+        // type guard to satisfy TS when building
+        qpErr = (searchParams as any).get('err') ?? null;
+      }
+
       if (qpErr === 'no_admin_access') {
         setErrMsg('You do not have admin access');
       }
@@ -142,9 +154,5 @@ export default function AdminLoginPage() {
             </Button>
           </form>
         </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 
