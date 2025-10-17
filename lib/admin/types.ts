@@ -45,4 +45,6 @@ export type PermissionName =
   | 'view_products'
   | 'manage_orders'
   | 'view_orders'
-  | 'view_analytics';
+  | 'view_analytics'
+  | 'manage_invoices'      
+  | 'view_invoices'; 
