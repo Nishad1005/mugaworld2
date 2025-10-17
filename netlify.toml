@@ -3,6 +3,8 @@
 [build]
   command = "npm run build"
   publish = ".next"
+command = "npx --yes update-browserslist-db@latest && npm run build"
+  publish = ".next"
 
 [functions]
   node_bundler = "esbuild"
