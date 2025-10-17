@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertInvoiceIssuer } from '../../invoices/_auth';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const issuer = await assertInvoiceIssuer();
   if (!issuer) return new NextResponse('Forbidden', { status: 403 });
