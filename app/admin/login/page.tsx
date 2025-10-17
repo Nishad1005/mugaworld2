@@ -6,58 +6,62 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Shield, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams(); // client-only, always defined
+  const supabase = createClient();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const router = useRouter();
-  const searchParams = useSearchParams(); // may be undefined at build type-check, so guard below
-  const supabase = createClient();
-
-  // Pre-check: if already signed in AND is active admin -> go to dashboard
+  // Pre-check session; if active admin, go straight to dashboard.
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    let isMounted = true;
 
+    (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
           const { data: admin, error } = await supabase
             .from('admins')
-            .select('id,is_active')
+            .select('id, is_active')
             .eq('id', user.id)
             .maybeSingle();
 
           if (!error && admin?.is_active) {
+            if (!isMounted) return;
             router.replace('/admin/dashboard');
             return;
           }
         }
       } catch {
-        // ignore precheck errors; fall through to login form
+        // ignore and fall through to login form
       }
 
-      // Read error from query string **safely** in CSR/SSR
-      let qpErr: string | null = null;
-      if (typeof window !== 'undefined') {
-        qpErr = new URLSearchParams(window.location.search).get('err');
-      } else if (searchParams && typeof (searchParams as any).get === 'function') {
-        // type guard to satisfy TS when building
-        qpErr = (searchParams as any).get('err') ?? null;
-      }
-
+      // read query param safely on client
+      const qpErr = searchParams.get('err');
       if (qpErr === 'no_admin_access') {
         setErrMsg('You do not have admin access');
       }
       setLoading(false);
     })();
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -67,28 +71,25 @@ export default function AdminLoginPage() {
     setSubmitting(true);
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({ email, password });
       if (authError) throw authError;
       if (!authData.user) throw new Error('Authentication failed');
 
       const { data: admin, error: adminError } = await supabase
         .from('admins')
-        .select('id,is_active')
+        .select('id, is_active')
         .eq('id', authData.user.id)
         .maybeSingle();
 
       if (adminError || !admin?.is_active) {
-        // not an admin -> sign out and show message
         await supabase.auth.signOut();
         throw new Error('You do not have admin access');
       }
 
-      router.replace('/admin/dashboard'); // success
+      router.replace('/admin/dashboard');
     } catch (err: any) {
-      setErrMsg(err?.message || 'Failed to sign in');
+      setErrMsg(err?.message ?? 'Failed to sign in');
     } finally {
       setSubmitting(false);
     }
@@ -114,6 +115,7 @@ export default function AdminLoginPage() {
           <CardTitle className="text-2xl font-bold">Admin Portal</CardTitle>
           <CardDescription>Sign in to access the admin dashboard</CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             {errMsg && (
@@ -154,5 +156,10 @@ export default function AdminLoginPage() {
             </Button>
           </form>
         </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 
