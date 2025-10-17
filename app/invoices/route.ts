@@ -13,6 +13,14 @@ type LineItem = {
   tax_rate: number;  // 0..100
   tax_type: 'cgst_sgst' | 'igst' | 'exempt' | 'nil';
 };
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// optional: quick probe so you can hit /api/invoices in the browser
+export async function GET() {
+  return new Response('invoices API alive', { status: 200 });
+}
+
 
 export async function POST(req: Request) {
   const issuer = await assertInvoiceIssuer();
