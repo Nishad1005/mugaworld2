@@ -1,23 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // client-only, always defined
   const supabase = createClient();
 
   const [email, setEmail] = useState('');
@@ -28,12 +21,11 @@ export default function AdminLoginPage() {
 
   // Pre-check session; if active admin, go straight to dashboard.
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-
         if (user) {
           const { data: admin, error } = await supabase
             .from('admins')
@@ -42,7 +34,7 @@ export default function AdminLoginPage() {
             .maybeSingle();
 
           if (!error && admin?.is_active) {
-            if (!isMounted) return;
+            if (!mounted) return;
             router.replace('/admin/dashboard');
             return;
           }
@@ -51,16 +43,18 @@ export default function AdminLoginPage() {
         // ignore and fall through to login form
       }
 
-      // read query param safely on client
-      const qpErr = searchParams.get('err');
-      if (qpErr === 'no_admin_access') {
-        setErrMsg('You do not have admin access');
+      // Read ?err= from URL safely on client (no useSearchParams)
+      let qpErr: string | null = null;
+      if (typeof window !== 'undefined') {
+        qpErr = new URLSearchParams(window.location.search).get('err');
       }
-      setLoading(false);
+      if (qpErr === 'no_admin_access') setErrMsg('You do not have admin access');
+
+      if (mounted) setLoading(false);
     })();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,8 +65,10 @@ export default function AdminLoginPage() {
     setSubmitting(true);
 
     try {
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({ email, password });
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (authError) throw authError;
       if (!authData.user) throw new Error('Authentication failed');
 
@@ -160,6 +156,8 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+
+
 
 
 
