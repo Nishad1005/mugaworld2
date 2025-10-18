@@ -1,41 +1,40 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 
-// --- Amount in words (Indian system) basic helper ---
+/* ---------- Amount in words (Indian) ---------- */
 function toIndianWords(n: number): string {
   if (!Number.isFinite(n)) return '';
   const units = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
   const tens  = ['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-  function two(num:number){ if(num<20) return units[num]; const t=Math.floor(num/10), u=num%10; return (tens[t] + (u? ' ' + units[u]:'')); }
-  function three(num:number){ const h=Math.floor(num/100), r=num%100; return (h? units[h] + ' Hundred' + (r?' and ':''):'') + (r? two(r):''); }
-  const num = Math.round(n); // round to rupees
+  const two = (num:number) => num < 20 ? units[num] : (tens[Math.floor(num/10)] + (num%10 ? ' ' + units[num%10] : ''));
+  const three = (num:number) => {
+    const h = Math.floor(num/100), r = num%100;
+    return (h ? units[h] + ' Hundred' + (r ? ' and ' : '') : '') + (r ? two(r) : '');
+  };
+  const num = Math.round(n);
   if (num === 0) return 'Zero Rupees';
-  const parts:number[] = [];
-  let x=num;
-  // Indian groups: Crore, Lakh, Thousand, Hundred, rest
-  const crore = Math.floor(x/10000000); if (crore){ parts.push(crore); x%=10000000; }
-  const lakh  = Math.floor(x/100000);  if (lakh){ parts.push(lakh);  x%=100000; }
-  const thou  = Math.floor(x/1000);    if (thou){ parts.push(thou);  x%=1000; }
-  const hund  = Math.floor(x/100);     if (hund){ parts.push(hund);  x%=100; }
+  let x = num;
+  const crore = Math.floor(x/10000000); x%=10000000;
+  const lakh  = Math.floor(x/100000);  x%=100000;
+  const thou  = Math.floor(x/1000);    x%=1000;
+  const hund  = Math.floor(x/100);     x%=100;
   const rest  = x;
-  const words:string[] = [];
-  let idx=0;
-  if (crore) { words.push(three(crore) + ' Crore'); idx++; }
-  if (lakh)  { words.push(three(lakh)  + ' Lakh');  idx++; }
-  if (thou)  { words.push(three(thou)  + ' Thousand'); idx++; }
-  if (hund)  { words.push(units[hund]  + ' Hundred'); idx++; }
-  if (rest)  { words.push(rest<100 && (crore || lakh || thou || hund) ? 'and ' + two(rest) : two(rest)); }
-  return (words.join(' ').replace(/\s+/g,' ').trim() + ' Rupees');
+  const parts:string[] = [];
+  if (crore) parts.push(three(crore) + ' Crore');
+  if (lakh)  parts.push(three(lakh)  + ' Lakh');
+  if (thou)  parts.push(three(thou)  + ' Thousand');
+  if (hund)  parts.push(units[hund]  + ' Hundred');
+  if (rest)  parts.push((crore||lakh||thou||hund) && rest<100 ? 'and ' + two(rest) : two(rest));
+  return parts.join(' ').replace(/\s+/g,' ').trim() + ' Rupees';
 }
 
+/* ---------- Types (align with your API) ---------- */
 type Item = {
   description: string;
   hsn_sac: string | null;
   unit_price: number;
   quantity: number;
-  line_discount: number | null;
   net_amount: number;
   tax_rate: number;
   tax_type: 'cgst_sgst' | 'igst';
@@ -46,12 +45,33 @@ type Item = {
 type Invoice = {
   id: string;
   invoice_no: string;
-  invoice_date: string;
+  invoice_date: string; // yyyy-mm-dd or ISO
   invoice_type: 'tax_invoice' | 'bill_of_supply' | 'cash_memo';
   place_of_supply: string | null;
   place_of_delivery: string | null;
-  billing_address: any | null;
-  shipping_address: any | null;
+
+  order_no?: string | null;
+  order_date?: string | null;
+
+  billing_address: {
+    line1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    pincode?: string | null;
+    pan?: string | null;
+    gstin?: string | null;
+    cin?: string | null;
+    name?: string | null;
+  } | null;
+
+  shipping_address: {
+    line1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    pincode?: string | null;
+    name?: string | null;
+  } | null;
+
   subtotal: number;
   discount_amount: number | null;
   shipping_amount: number | null;
@@ -59,13 +79,16 @@ type Invoice = {
   tax_sgst: number | null;
   tax_igst: number | null;
   grand_total: number;
+
   amount_in_words: string | null;
+
   qr_override_mode: 'inherit' | 'image' | 'upi' | 'url' | null;
   qr_override_image_url: string | null;
   qr_override_upi_vpa: string | null;
   qr_override_url: string | null;
   qr_amount_lock: number | null;
   qr_note: string | null;
+
   status: string | null;
   invoice_items: Item[];
 };
@@ -98,23 +121,20 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   if (err) return <div className="p-6 text-red-600">{err}</div>;
   if (!inv) return <div className="p-6">Loading…</div>;
 
-  const titleRight = (() => {
-    switch (inv.invoice_type) {
-      case 'bill_of_supply': return 'Bill of Supply';
-      case 'cash_memo': return 'Cash Memo';
-      default: return 'Tax Invoice';
-    }
-  })() + ' (Original for Recipient)';
+  const titleRight =
+    (inv.invoice_type === 'bill_of_supply' ? 'Bill of Supply'
+      : inv.invoice_type === 'cash_memo' ? 'Cash Memo' : 'Tax Invoice') +
+    ' (Original for Recipient)';
 
-  // QR block (optional)
+  /* ---------- QR block (optional) ---------- */
   const qrBlock = (() => {
     const mode = inv.qr_override_mode || 'inherit';
     if (mode === 'image' && inv.qr_override_image_url) {
       return (
         <div className="text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={inv.qr_override_image_url} alt="QR" className="h-32 w-32 object-contain mx-auto" />
-          {inv.qr_note && <div className="text-xs mt-1">{inv.qr_note}</div>}
+          <img src={inv.qr_override_image_url} alt="QR" className="h-28 w-28 object-contain mx-auto" />
+          {inv.qr_note && <div className="text-[10px] mt-1">{inv.qr_note}</div>}
         </div>
       );
     }
@@ -124,7 +144,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
       return (
         <div className="text-xs">
           <div className="font-medium">UPI: {inv.qr_override_upi_vpa}</div>
-          <div><a className="underline" href={url}>Open UPI App</a></div>
+          <div><a className="underline" href={url}>Open in UPI app</a></div>
           {inv.qr_note && <div className="mt-1">{inv.qr_note}</div>}
         </div>
       );
@@ -143,152 +163,219 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="p-6 print:p-0">
+    <div className="bg-neutral-50 print:bg-white min-h-screen py-6 print:py-0">
+      {/* Print CSS */}
       <style>{`
         @media print {
-          @page { size: A4; margin: 12mm; }
+          @page { size: A4; margin: 10mm 10mm 12mm 10mm; }
           .no-print { display: none !important; }
+          .page { box-shadow: none !important; border: 0 !important; }
           body { background: #fff !important; }
+          .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+          .tbl thead tr { break-inside: avoid; page-break-inside: avoid; }
+          .footer-note { position: fixed; bottom: 8mm; left: 10mm; right: 10mm; }
         }
       `}</style>
 
-      <div className="no-print mb-4 flex justify-end">
-        <button onClick={() => window.print()} className="h-10 px-4 rounded-md bg-black text-white hover:opacity-90">
-          Print
-        </button>
-      </div>
+      <div className="max-w-4xl mx-auto page bg-white shadow-xl rounded-xl border border-neutral-200 overflow-hidden">
+        {/* Top control bar (hidden in print) */}
+        <div className="no-print flex justify-end gap-2 p-3 border-b">
+          <button onClick={() => window.print()} className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90">
+            Print
+          </button>
+        </div>
 
-      <div className="mx-auto max-w-4xl bg-white text-black p-6 border rounded-md">
         {/* Header */}
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex items-center gap-3">
-            {/* Replace src with your logo path if you have one */}
-            {/* <Image src="/logo.png" width={48} height={48} alt="Logo" /> */}
-            <div className="text-lg font-semibold">Mugaworld Private Limited</div>
-          </div>
-          <div className="text-right text-sm">
-            <div className="font-bold">{titleRight}</div>
-          </div>
-        </div>
-
-        {/* Addresses */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="border rounded p-3">
-            <div className="font-semibold mb-1">Sold By</div>
-            {/* Replace with your fixed seller address or pull from settings table */}
-            <div>Mugaworld Private Limited</div>
-            <div>ABC Road, Guwahati, Assam</div>
-            {/* PAN/GST/CIN (seller) — remove lines you don’t use */}
-            <div className="mt-2 space-y-0.5 text-sm">
-              <div>PAN: <span>XXXXXXXXXX</span></div>
-              <div>GSTIN: <span>XXABCDE1234F1Z5</span></div>
-              <div>CIN: <span>U12345AS2024PTC000000</span></div>
+        <div className="p-6 pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/PNG copy copy.png" alt="Muga World" className="h-11 w-11 rounded-full ring-2 ring-[#D7A444]" />
+              <div>
+                <div className="text-[18px] font-semibold tracking-wide">Mugaworld Private Limited</div>
+                {/* Replace with company settings when available */}
+                <div className="text-[11px] text-neutral-600">
+                  ABC Road, Guwahati, Assam • GSTIN: XXABCDE1234F1Z5 • CIN: U12345AS2024PTC000000
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div className="border rounded p-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="font-semibold mb-1">Billing Address</div>
-                {inv.billing_address?.line1 && <div>{inv.billing_address.line1}</div>}
-                {inv.billing_address?.city && <div>{inv.billing_address.city}</div>}
-                {inv.billing_address?.state && <div>{inv.billing_address.state}</div>}
-                {inv.billing_address?.pincode && <div>{inv.billing_address.pincode}</div>}
-                {/* Optional customer PAN/GST/CIN if provided */}
-                {inv.billing_address?.pan && <div className="text-sm mt-1">PAN: {inv.billing_address.pan}</div>}
-                {inv.billing_address?.gstin && <div className="text-sm">GSTIN: {inv.billing_address.gstin}</div>}
-                {inv.billing_address?.cin && <div className="text-sm">CIN: {inv.billing_address.cin}</div>}
+            <div className="text-right">
+              <div
+                className="inline-flex items-center text-[12px] font-semibold px-3 py-1 rounded-full"
+                style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
+              >
+                {titleRight}
               </div>
-              <div>
-                <div className="font-semibold mb-1">Shipping Address</div>
-                {inv.shipping_address?.line1 && <div>{inv.shipping_address.line1}</div>}
-                {inv.shipping_address?.city && <div>{inv.shipping_address.city}</div>}
-                {inv.shipping_address?.state && <div>{inv.shipping_address.state}</div>}
-                {inv.shipping_address?.pincode && <div>{inv.shipping_address.pincode}</div>}
-              </div>
+              <div className="text-[11px] text-neutral-500 mt-1">Invoice No: <span className="font-medium text-neutral-800">{inv.invoice_no}</span></div>
+              <div className="text-[11px] text-neutral-500">Invoice Date: <span className="font-medium text-neutral-800">{inv.invoice_date}</span></div>
             </div>
           </div>
         </div>
 
-        {/* Numbers & Dates */}
-        <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-          <div className="border rounded p-3 space-y-1">
-            <div>Place of Supply: <span className="font-medium">{inv.place_of_supply ?? '-'}</span></div>
-            {inv.place_of_delivery && <div>Place of Delivery: <span className="font-medium">{inv.place_of_delivery}</span></div>}
+        {/* Meta blocks */}
+        <div className="px-6 pt-2">
+          <div className="grid grid-cols-12 gap-4">
+            {/* Sold By */}
+            <div className="col-span-6 border rounded-lg p-3 avoid-break">
+              <div className="text-[12px] font-semibold mb-1">Sold By</div>
+              <div className="text-[12px] leading-[1.15]">
+                Mugaworld Private Limited<br />ABC Road, Guwahati, Assam
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                <div>PAN: <span className="font-medium">XXXXXXXXXX</span></div>
+                <div>GSTIN: <span className="font-medium">XXABCDE1234F1Z5</span></div>
+                <div>CIN: <span className="font-medium">U12345AS2024PTC000000</span></div>
+              </div>
+            </div>
+
+            {/* Buyer Addresses */}
+            <div className="col-span-6 border rounded-lg p-3 avoid-break">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[12px] font-semibold mb-1">Billing Address</div>
+                  <div className="text-[12px] leading-[1.15]">
+                    {inv.billing_address?.name && <div className="font-medium">{inv.billing_address.name}</div>}
+                    {inv.billing_address?.line1 && <div>{inv.billing_address.line1}</div>}
+                    {(inv.billing_address?.city || inv.billing_address?.state || inv.billing_address?.pincode) && (
+                      <div>
+                        {inv.billing_address?.city}{inv.billing_address?.city && inv.billing_address?.state ? ', ' : ''}{inv.billing_address?.state} {inv.billing_address?.pincode}
+                      </div>
+                    )}
+                  </div>
+                  {(inv.billing_address?.pan || inv.billing_address?.gstin || inv.billing_address?.cin) && (
+                    <div className="text-[11px] mt-1 space-y-0.5">
+                      {inv.billing_address?.pan && <div>PAN: {inv.billing_address.pan}</div>}
+                      {inv.billing_address?.gstin && <div>GSTIN: {inv.billing_address.gstin}</div>}
+                      {inv.billing_address?.cin && <div>CIN: {inv.billing_address.cin}</div>}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[12px] font-semibold mb-1">Shipping Address</div>
+                  <div className="text-[12px] leading-[1.15]">
+                    {inv.shipping_address?.name && <div className="font-medium">{inv.shipping_address.name}</div>}
+                    {inv.shipping_address?.line1 && <div>{inv.shipping_address.line1}</div>}
+                    {(inv.shipping_address?.city || inv.shipping_address?.state || inv.shipping_address?.pincode) && (
+                      <div>
+                        {inv.shipping_address?.city}{inv.shipping_address?.city && inv.shipping_address?.state ? ', ' : ''}{inv.shipping_address?.state} {inv.shipping_address?.pincode}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Order / Places */}
+            <div className="col-span-6 border rounded-lg p-3 text-[12px] avoid-break">
+              <div className="grid grid-cols-2 gap-2">
+                <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
+                <div>Order Date: <span className="font-medium">{inv.order_date ?? '—'}</span></div>
+                <div>Place of Supply: <span className="font-medium">{inv.place_of_supply ?? '—'}</span></div>
+                {inv.place_of_delivery && (
+                  <div>Place of Delivery: <span className="font-medium">{inv.place_of_delivery}</span></div>
+                )}
+              </div>
+            </div>
+
+            {/* QR (optional) */}
+            {qrBlock && (
+              <div className="col-span-6 border rounded-lg p-3 avoid-break">
+                <div className="text-[12px] font-semibold mb-1">Payment</div>
+                {qrBlock}
+              </div>
+            )}
           </div>
-          <div className="border rounded p-3 space-y-1">
-            <div>Order No: <span className="font-medium">{inv.order_no ?? '-'}</span></div>
-            <div>Order Date: <span className="font-medium">{inv.order_date ?? '-'}</span></div>
-          </div>
-          <div className="border rounded p-3 space-y-1">
-            <div>Invoice No: <span className="font-medium">{inv.invoice_no}</span></div>
-            <div>Invoice Date: <span className="font-medium">{inv.invoice_date}</span></div>
-          </div>
-          {qrBlock && (
-            <div className="border rounded p-3">{qrBlock}</div>
-          )}
         </div>
 
-        {/* Table */}
-        <div className="mt-4">
-          <table className="w-full text-xs border">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-2 border">S/N</th>
-                <th className="p-2 border">Description</th>
-                <th className="p-2 border text-right">Unit Price</th>
-                <th className="p-2 border text-right">Qty</th>
-                <th className="p-2 border text-right">Net</th>
-                <th className="p-2 border text-right">Tax %</th>
-                <th className="p-2 border">Tax Type</th>
-                <th className="p-2 border text-right">Tax Amt</th>
-                <th className="p-2 border text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inv.invoice_items.map((it, idx) => (
-                <tr key={idx}>
-                  <td className="p-2 border">{idx + 1}</td>
-                  <td className="p-2 border">
-                    <div>{it.description}</div>
-                    {it.hsn_sac && <div className="text-[10px] text-gray-600">HSN/SAC: {it.hsn_sac}</div>}
-                  </td>
-                  <td className="p-2 border text-right">₹ {it.unit_price.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{it.quantity}</td>
-                  <td className="p-2 border text-right">₹ {it.net_amount.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{it.tax_rate}%</td>
-                  <td className="p-2 border">{it.tax_type.toUpperCase()}</td>
-                  <td className="p-2 border text-right">₹ {it.tax_amount.toFixed(2)}</td>
-                  <td className="p-2 border text-right">₹ {it.line_total.toFixed(2)}</td>
+        {/* Items Table */}
+        <div className="px-6 mt-4">
+          <div className="border rounded-xl overflow-hidden">
+            <table className="w-full tbl text-[11.5px]">
+              <thead className="bg-neutral-50">
+                <tr className="text-left">
+                  <th className="p-2.5 border-b">S/N</th>
+                  <th className="p-2.5 border-b">Description</th>
+                  <th className="p-2.5 border-b text-right">Unit Price</th>
+                  <th className="p-2.5 border-b text-right">Qty</th>
+                  <th className="p-2.5 border-b text-right">Net</th>
+                  <th className="p-2.5 border-b text-right">Tax %</th>
+                  <th className="p-2.5 border-b">Tax Type</th>
+                  <th className="p-2.5 border-b text-right">Tax Amt</th>
+                  <th className="p-2.5 border-b text-right">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Totals */}
-        <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-          <div />
-          <div className="border rounded p-3 space-y-1">
-            <div className="flex justify-between"><span>Subtotal</span><span>₹ {inv.subtotal.toFixed(2)}</span></div>
-            {inv.discount_amount ? <div className="flex justify-between"><span>Discount</span><span>- ₹ {inv.discount_amount.toFixed(2)}</span></div> : null}
-            {inv.shipping_amount ? <div className="flex justify-between"><span>Shipping</span><span>₹ {inv.shipping_amount.toFixed(2)}</span></div> : null}
-            {inv.tax_cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {inv.tax_cgst.toFixed(2)}</span></div> : null}
-            {inv.tax_sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {inv.tax_sgst.toFixed(2)}</span></div> : null}
-            {inv.tax_igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {inv.tax_igst.toFixed(2)}</span></div> : null}
-            <div className="border-t pt-2 flex justify-between font-semibold text-base">
-              <span>Total Value (in numbers)</span>
-              <span>₹ {inv.grand_total.toFixed(2)}</span>
-            </div>
-            <div className="text-xs mt-1">In words: <span className="italic">{amountWords}</span></div>
+              </thead>
+              <tbody>
+                {inv.invoice_items.map((it, idx) => (
+                  <tr key={idx} className={idx % 2 ? 'bg-white' : 'bg-neutral-50/40'}>
+                    <td className="p-2.5 border-t align-top">{idx + 1}</td>
+                    <td className="p-2.5 border-t align-top">
+                      <div className="font-medium">{it.description}</div>
+                      {it.hsn_sac && <div className="text-[10px] text-neutral-500 mt-0.5">HSN/SAC: {it.hsn_sac}</div>}
+                    </td>
+                    <td className="p-2.5 border-t text-right align-top">₹ {it.unit_price.toFixed(2)}</td>
+                    <td className="p-2.5 border-t text-right align-top">{it.quantity}</td>
+                    <td className="p-2.5 border-t text-right align-top">₹ {it.net_amount.toFixed(2)}</td>
+                    <td className="p-2.5 border-t text-right align-top">{it.tax_rate}%</td>
+                    <td className="p-2.5 border-t align-top uppercase">{it.tax_type.replace('_',' + ').toUpperCase()}</td>
+                    <td className="p-2.5 border-t text-right align-top">₹ {it.tax_amount.toFixed(2)}</td>
+                    <td className="p-2.5 border-t text-right align-top">₹ {it.line_total.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Signature block */}
-        <div className="mt-8">
-          <div className="font-semibold">For Mugaworld Private Limited</div>
-          <div className="h-16" />
-          <div className="text-sm">Authorized Signatory</div>
+        {/* Totals + Words + Signature */}
+        <div className="px-6 mt-4 mb-6">
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-7 text-[11.5px]">
+              <div className="border rounded-lg p-3 avoid-break">
+                <div className="text-[12px] font-semibold mb-1">Amount in Words</div>
+                <div className="italic">{amountWords}</div>
+              </div>
+
+              {/* Terms (optional) */}
+              <div className="border rounded-lg p-3 mt-3 text-[10.5px] text-neutral-700 avoid-break">
+                <div className="font-semibold mb-1">Terms &amp; Notes</div>
+                <ul className="list-disc ml-4 space-y-0.5">
+                  <li>Goods once sold will not be taken back.</li>
+                  <li>Subject to Guwahati jurisdiction.</li>
+                  <li>This is a computer generated invoice and does not require a physical signature.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="col-span-5">
+              <div className="border rounded-lg p-3 text-[12px] space-y-1 avoid-break">
+                <div className="flex justify-between"><span>Subtotal</span><span>₹ {inv.subtotal.toFixed(2)}</span></div>
+                {inv.discount_amount ? <div className="flex justify-between"><span>Discount</span><span>- ₹ {inv.discount_amount.toFixed(2)}</span></div> : null}
+                {inv.shipping_amount ? <div className="flex justify-between"><span>Shipping</span><span>₹ {inv.shipping_amount.toFixed(2)}</span></div> : null}
+                {inv.tax_cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {inv.tax_cgst.toFixed(2)}</span></div> : null}
+                {inv.tax_sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {inv.tax_sgst.toFixed(2)}</span></div> : null}
+                {inv.tax_igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {inv.tax_igst.toFixed(2)}</span></div> : null}
+                <div className="border-t pt-2 mt-1 flex justify-between text-[13px] font-semibold">
+                  <span>Total Value (in numbers)</span>
+                  <span>₹ {inv.grand_total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Signature */}
+              <div className="border rounded-lg p-3 mt-3 text-[12px] avoid-break">
+                <div className="font-semibold">For Mugaworld Private Limited</div>
+                <div className="h-14" />
+                <div className="text-right text-[12px]">Authorised Signatory</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-4 text-[10px] text-neutral-500 footer-note">
+          <div className="flex justify-between">
+            <div>Printed on {new Date().toLocaleString()}</div>
+            <div>Page 1 of 1</div>
+          </div>
         </div>
       </div>
     </div>
