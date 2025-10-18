@@ -244,6 +244,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 <img
                   src="/PNG copy copy.png"
                   alt="Muga World"
+                  className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]"
                 />
                 <div>
                   <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
@@ -438,3 +439,4 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
