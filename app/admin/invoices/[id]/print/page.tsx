@@ -24,12 +24,12 @@ function toIndianWords(n: number): string {
   if (crore) parts.push(three(crore) + ' Crore');
   if (lakh)  parts.push(three(lakh)  + ' Lakh');
   if (thou)  parts.push(three(thou)  + ' Thousand');
-  if (hund)  parts.push('' + units[hund]  + ' Hundred');
+  if (hund)  parts.push(units[hund]  + ' Hundred');
   if (rest)  parts.push((crore||lakh||thou||hund) && rest<100 ? 'and ' + two(rest) : two(rest));
   return parts.join(' ').replace(/\s+/g,' ').trim() + ' Rupees';
 }
 
-/* ---------- Types ---------- */
+/* ---------- Types (align with your API) ---------- */
 type Item = {
   description: string;
   hsn_sac: string | null;
@@ -41,6 +41,7 @@ type Item = {
   tax_amount: number;
   line_total: number;
 };
+
 type Addr = {
   name?: string | null;
   line1?: string | null;
@@ -51,6 +52,7 @@ type Addr = {
   gstin?: string | null;
   cin?: string | null;
 } | null;
+
 type Invoice = {
   id: string;
   invoice_no: string;
@@ -84,7 +86,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   const [inv, setInv] = useState<Invoice | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  const pageRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
 
   // Load invoice
   useEffect(() => {
@@ -103,18 +105,41 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     return () => { mounted = false; };
   }, [params.id]);
 
-  // Auto-fit to a single A4 page (≈1045px usable height inside 10mm margins)
+  // Auto-fit to a single A4 page.
+  // Usable content inside 10mm margins: width 190mm, height 277mm.
   useEffect(() => {
     function fit() {
-      const node = pageRef.current;
+      const node = sheetRef.current;
       if (!node) return;
+
+      // Reset to natural scale to measure
       node.style.setProperty('--fit-scale', '1');
-      const natural = node.scrollHeight;
-      const target = 1045;
-      const s = Math.min(1, target / natural);
+
+      // px per mm ≈ 96/25.4 = 3.7795 (CSS px at 96dpi)
+      const pxPerMm = 3.7795275591;
+      const targetW = 190 * pxPerMm;  // ~ 718 px
+      const targetH = 277 * pxPerMm;  // ~ 1047 px
+
+      // Ensure the sheet width is fixed to A4 content width
+      node.style.width = `${targetW}px`;
+
+      // Measure natural content size
+      const naturalW = node.scrollWidth;
+      const naturalH = node.scrollHeight;
+
+      // Compute scale that fits BOTH dimensions
+      const sW = targetW / naturalW;
+      const sH = targetH / naturalH;
+      const s = Math.min(1, sW, sH);
+
       node.style.setProperty('--fit-scale', String(s));
+      // Prevent spillover (printer pagination) when scaled
+      node.style.height = `${targetH}px`;
+      node.style.overflow = 'hidden';
+
       setScale(s);
     }
+
     const id = setTimeout(fit, 50);
     window.addEventListener('resize', fit);
     return () => { clearTimeout(id); window.removeEventListener('resize', fit); };
@@ -133,6 +158,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
       : inv.invoice_type === 'cash_memo' ? 'Cash Memo' : 'Tax Invoice') +
     ' (Original for Recipient)';
 
+  /* ---------- QR block (optional) ---------- */
   const qrBlock = (() => {
     const mode = inv.qr_override_mode || 'inherit';
     if (mode === 'image' && inv.qr_override_image_url) {
@@ -158,7 +184,9 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     if (mode === 'url' && inv.qr_override_url) {
       return (
         <div className="text-[10px]">
-          <a className="underline" href={inv.qr_override_url} target="_blank" rel="noreferrer">Payment Link</a>
+          <a className="underline" href={inv.qr_override_url} target="_blank" rel="noreferrer">
+            Payment Link
+          </a>
           {inv.qr_note && <div className="mt-0.5">{inv.qr_note}</div>}
         </div>
       );
@@ -167,222 +195,248 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-neutral-50 print:bg-white">
+      {/* Page + print rules */}
       <style>{`
         @media print {
           @page { size: A4; margin: 10mm; }
           .no-print { display: none !important; }
+          body { background: #fff !important; }
         }
-        .fit-page { transform-origin: top left; transform: scale(var(--fit-scale, 1)); width: calc(100% / var(--fit-scale, 1)); }
+        .sheet {
+          /* A4 content width; height is set in JS to exact usable space */
+          width: 190mm; /* JS will also set px width to avoid rounding issues */
+          transform-origin: top left;
+          transform: scale(var(--fit-scale, 1));
+          background: #ffffff !important;
+          color: #0a0a0a !important;
+        }
+        .sheet * {
+          background: inherit !important;
+          color: inherit !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
       `}</style>
 
-      {/* Controls (screen only; leaves printed page clean) */}
+      {/* Controls (screen only) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-between">
-        <div className="text-sm text-neutral-500">
-          {scale < 1 ? `Fitted to ${Math.round(scale * 100)}% for single-page print` : 'Fits on one page'}
+        <div className="text-sm text-neutral-600">
+          {scale < 1 ? `Fitted to ${Math.round(scale * 100)}% — single A4 page`
+                     : 'Fits on one A4 page at 100%'}
         </div>
-        <button onClick={() => window.print()} className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90">
+        <button
+          onClick={() => window.print()}
+          className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
+        >
           Print
         </button>
       </div>
 
-      <div
-        ref={pageRef}
-        className="invoice-surface fit-page max-w-4xl mx-auto page shadow-xl rounded-xl border overflow-hidden"
-        style={{ ['--fit-scale' as any]: 1 }}
-      >
-        {/* Header */}
-        <div className="p-4 pb-2">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/PNG copy copy.png" alt="Muga World" className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]" />
-              <div>
-                <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
-                <div className="text-[10px]">ABC Road, Guwahati, Assam • GSTIN: XXABCDE1234F1Z5 • CIN: U12345AS2024PTC000000</div>
+      {/* A4 sheet */}
+      <div className="max-w-4xl mx-auto">
+        <div ref={sheetRef} className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="p-4 pb-2">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/PNG copy copy.png"
+                  alt="Muga World"
+                  className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]"
+                />
+                <div>
+                  <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
+                  <div className="text-[10px]">
+                    ABC Road, Guwahati, Assam • GSTIN: XXABCDE1234F1Z5 • CIN: U12345AS2024PTC000000
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div
-                className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
-              >
-                {titleRight}
-              </div>
-              <div className="text-[10px] mt-1">
-                Invoice No: <span className="font-medium">{inv.invoice_no}</span>
-              </div>
-              <div className="text-[10px]">
-                Invoice Date: <span className="font-medium">{inv.invoice_date}</span>
+              <div className="text-right">
+                <div
+                  className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
+                >
+                  {titleRight}
+                </div>
+                <div className="text-[10px] mt-1">
+                  Invoice No: <span className="font-medium">{inv.invoice_no}</span>
+                </div>
+                <div className="text-[10px]">
+                  Invoice Date: <span className="font-medium">{inv.invoice_date}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Meta blocks */}
-        <div className="px-4 pt-2">
-          <div className="grid grid-cols-12 gap-3">
-            {/* Sold By */}
-            <div className="col-span-6 border rounded-lg p-2.5">
-              <div className="text-[11px] font-semibold mb-1">Sold By</div>
-              <div className="text-[11px] leading-tight">
-                Mugaworld Private Limited<br />ABC Road, Guwahati, Assam
+          {/* Meta blocks (2x2) */}
+          <div className="px-4 pt-2">
+            <div className="grid grid-cols-12 gap-3">
+              {/* Sold By */}
+              <div className="col-span-6 border rounded-lg p-2.5">
+                <div className="text-[11px] font-semibold mb-1">Sold By</div>
+                <div className="text-[11px] leading-tight">
+                  Mugaworld Private Limited<br />ABC Road, Guwahati, Assam
+                </div>
+                <div className="mt-1 grid grid-cols-3 gap-1 text-[10px]">
+                  <div>PAN: <span className="font-medium">XXXXXXXXXX</span></div>
+                  <div>GSTIN: <span className="font-medium">XXABCDE1234F1Z5</span></div>
+                  <div>CIN: <span className="font-medium">U12345AS2024PTC000000</span></div>
+                </div>
               </div>
-              <div className="mt-1 grid grid-cols-3 gap-1 text-[10px]">
-                <div>PAN: <span className="font-medium">XXXXXXXXXX</span></div>
-                <div>GSTIN: <span className="font-medium">XXABCDE1234F1Z5</span></div>
-                <div>CIN: <span className="font-medium">U12345AS2024PTC000000</span></div>
-              </div>
-            </div>
 
-            {/* Buyer Addresses */}
-            <div className="col-span-6 border rounded-lg p-2.5">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="text-[11px] font-semibold mb-1">Billing Address</div>
-                  <div className="text-[11px] leading-tight">
-                    {inv.billing_address?.name && <div className="font-medium">{inv.billing_address.name}</div>}
-                    {inv.billing_address?.line1 && <div className="truncate">{inv.billing_address.line1}</div>}
-                    {(inv.billing_address?.city || inv.billing_address?.state || inv.billing_address?.pincode) && (
-                      <div className="truncate">
-                        {inv.billing_address?.city}{inv.billing_address?.city && inv.billing_address?.state ? ', ' : ''}{inv.billing_address?.state} {inv.billing_address?.pincode}
+              {/* Buyer Addresses */}
+              <div className="col-span-6 border rounded-lg p-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[11px] font-semibold mb-1">Billing Address</div>
+                    <div className="text-[11px] leading-tight">
+                      {inv.billing_address?.name && <div className="font-medium">{inv.billing_address.name}</div>}
+                      {inv.billing_address?.line1 && <div className="truncate">{inv.billing_address.line1}</div>}
+                      {(inv.billing_address?.city || inv.billing_address?.state || inv.billing_address?.pincode) && (
+                        <div className="truncate">
+                          {inv.billing_address?.city}{inv.billing_address?.city && inv.billing_address?.state ? ', ' : ''}{inv.billing_address?.state} {inv.billing_address?.pincode}
+                        </div>
+                      )}
+                    </div>
+                    {(inv.billing_address?.pan || inv.billing_address?.gstin || inv.billing_address?.cin) && (
+                      <div className="text-[10px] mt-0.5 space-y-0.5">
+                        {inv.billing_address?.pan && <div>PAN: {inv.billing_address.pan}</div>}
+                        {inv.billing_address?.gstin && <div>GSTIN: {inv.billing_address.gstin}</div>}
+                        {inv.billing_address?.cin && <div>CIN: {inv.billing_address.cin}</div>}
                       </div>
                     )}
                   </div>
-                  {(inv.billing_address?.pan || inv.billing_address?.gstin || inv.billing_address?.cin) && (
-                    <div className="text-[10px] mt-0.5 space-y-0.5">
-                      {inv.billing_address?.pan && <div>PAN: {inv.billing_address.pan}</div>}
-                      {inv.billing_address?.gstin && <div>GSTIN: {inv.billing_address.gstin}</div>}
-                      {inv.billing_address?.cin && <div>CIN: {inv.billing_address.cin}</div>}
+                  <div>
+                    <div className="text-[11px] font-semibold mb-1">Shipping Address</div>
+                    <div className="text-[11px] leading-tight">
+                      {inv.shipping_address?.name && <div className="font-medium">{inv.shipping_address.name}</div>}
+                      {inv.shipping_address?.line1 && <div className="truncate">{inv.shipping_address.line1}</div>}
+                      {(inv.shipping_address?.city || inv.shipping_address?.state || inv.shipping_address?.pincode) && (
+                        <div className="truncate">
+                          {inv.shipping_address?.city}{inv.shipping_address?.city && inv.shipping_address?.state ? ', ' : ''}{inv.shipping_address?.state} {inv.shipping_address?.pincode}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order / Places */}
+              <div className="col-span-6 border rounded-lg p-2.5 text-[11px]">
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
+                  <div>Order Date: <span className="font-medium">{inv.order_date ?? '—'}</span></div>
+                  <div>Place of Supply: <span className="font-medium">{inv.place_of_supply ?? '—'}</span></div>
+                  {inv.place_of_delivery && (
+                    <div>Place of Delivery: <span className="font-medium">{inv.place_of_delivery}</span></div>
                   )}
                 </div>
-                <div>
-                  <div className="text-[11px] font-semibold mb-1">Shipping Address</div>
-                  <div className="text-[11px] leading-tight">
-                    {inv.shipping_address?.name && <div className="font-medium">{inv.shipping_address.name}</div>}
-                    {inv.shipping_address?.line1 && <div className="truncate">{inv.shipping_address.line1}</div>}
-                    {(inv.shipping_address?.city || inv.shipping_address?.state || inv.shipping_address?.pincode) && (
-                      <div className="truncate">
-                        {inv.shipping_address?.city}{inv.shipping_address?.city && inv.shipping_address?.state ? ', ' : ''}{inv.shipping_address?.state} {inv.shipping_address?.pincode}
-                      </div>
-                    )}
+              </div>
+
+              {/* QR (optional) */}
+              {qrBlock && (
+                <div className="col-span-6 border rounded-lg p-2.5">
+                  <div className="text-[11px] font-semibold mb-1">Payment</div>
+                  {qrBlock}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Items Table (tight) */}
+          <div className="px-4 mt-3">
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full text-[10.5px]">
+                <thead>
+                  <tr className="text-left">
+                    <th className="p-2 border-b">S/N</th>
+                    <th className="p-2 border-b">Description</th>
+                    <th className="p-2 border-b text-right">Unit</th>
+                    <th className="p-2 border-b text-right">Qty</th>
+                    <th className="p-2 border-b text-right">Net</th>
+                    <th className="p-2 border-b text-right">Tax %</th>
+                    <th className="p-2 border-b">Type</th>
+                    <th className="p-2 border-b text-right">Tax</th>
+                    <th className="p-2 border-b text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inv.invoice_items.map((it, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border-t align-top">{idx + 1}</td>
+                      <td className="p-2 border-t align-top">
+                        <div className="font-medium truncate">{it.description}</div>
+                        {it.hsn_sac && <div className="text-[9px] mt-0.5">HSN/SAC: {it.hsn_sac}</div>}
+                      </td>
+                      <td className="p-2 border-t text-right align-top">₹ {it.unit_price.toFixed(2)}</td>
+                      <td className="p-2 border-t text-right align-top">{it.quantity}</td>
+                      <td className="p-2 border-t text-right align-top">₹ {it.net_amount.toFixed(2)}</td>
+                      <td className="p-2 border-t text-right align-top">{it.tax_rate}%</td>
+                      <td className="p-2 border-t align-top uppercase">{it.tax_type.replace('_',' + ').toUpperCase()}</td>
+                      <td className="p-2 border-t text-right align-top">₹ {it.tax_amount.toFixed(2)}</td>
+                      <td className="p-2 border-t text-right align-top">₹ {it.line_total.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals + Words + Signature */}
+          <div className="px-4 mt-3 mb-4">
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-7 text-[10.5px]">
+                <div className="border rounded-lg p-2.5">
+                  <div className="text-[11px] font-semibold mb-1">Amount in Words</div>
+                  <div className="italic leading-tight">{amountWords}</div>
+                </div>
+
+                {/* Keep notes minimal to help fitting in one page */}
+                <div className="border rounded-lg p-2 mt-2 text-[9.5px]">
+                  <div className="font-semibold mb-0.5">Terms &amp; Notes</div>
+                  <ul className="list-disc ml-4 leading-tight">
+                    <li>Goods once sold will not be taken back.</li>
+                    <li>Subject to Guwahati jurisdiction.</li>
+                    <li>Computer generated invoice; no physical signature required.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="col-span-5">
+                <div className="border rounded-lg p-2.5 text-[11px] space-y-1">
+                  <div className="flex justify-between"><span>Subtotal</span><span>₹ {inv.subtotal.toFixed(2)}</span></div>
+                  {inv.discount_amount ? <div className="flex justify-between"><span>Discount</span><span>- ₹ {inv.discount_amount.toFixed(2)}</span></div> : null}
+                  {inv.shipping_amount ? <div className="flex justify-between"><span>Shipping</span><span>₹ {inv.shipping_amount.toFixed(2)}</span></div> : null}
+                  {inv.tax_cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {inv.tax_cgst.toFixed(2)}</span></div> : null}
+                  {inv.tax_sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {inv.tax_sgst.toFixed(2)}</span></div> : null}
+                  {inv.tax_igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {inv.tax_igst.toFixed(2)}</span></div> : null}
+                  <div className="border-t pt-2 mt-1 flex justify-between text-[12px] font-semibold">
+                    <span>Total Value (in numbers)</span>
+                    <span>₹ {inv.grand_total.toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Order / Places */}
-            <div className="col-span-6 border rounded-lg p-2.5 text-[11px]">
-              <div className="grid grid-cols-2 gap-1.5">
-                <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
-                <div>Order Date: <span className="font-medium">{inv.order_date ?? '—'}</span></div>
-                <div>Place of Supply: <span className="font-medium">{inv.place_of_supply ?? '—'}</span></div>
-                {inv.place_of_delivery && (
-                  <div>Place of Delivery: <span className="font-medium">{inv.place_of_delivery}</span></div>
-                )}
-              </div>
-            </div>
-
-            {/* QR (optional) */}
-            {qrBlock && (
-              <div className="col-span-6 border rounded-lg p-2.5">
-                <div className="text-[11px] font-semibold mb-1">Payment</div>
-                {qrBlock}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Items Table */}
-        <div className="px-4 mt-3">
-          <div className="border rounded-xl overflow-hidden">
-            <table className="w-full text-[10.5px]">
-              <thead>
-                <tr className="text-left">
-                  <th className="p-2 border-b">S/N</th>
-                  <th className="p-2 border-b">Description</th>
-                  <th className="p-2 border-b text-right">Unit</th>
-                  <th className="p-2 border-b text-right">Qty</th>
-                  <th className="p-2 border-b text-right">Net</th>
-                  <th className="p-2 border-b text-right">Tax %</th>
-                  <th className="p-2 border-b">Type</th>
-                  <th className="p-2 border-b text-right">Tax</th>
-                  <th className="p-2 border-b text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.invoice_items.map((it, idx) => (
-                  <tr key={idx}>
-                    <td className="p-2 border-t align-top">{idx + 1}</td>
-                    <td className="p-2 border-t align-top">
-                      <div className="font-medium truncate">{it.description}</div>
-                      {it.hsn_sac && <div className="text-[9px] mt-0.5">HSN/SAC: {it.hsn_sac}</div>}
-                    </td>
-                    <td className="p-2 border-t text-right align-top">₹ {it.unit_price.toFixed(2)}</td>
-                    <td className="p-2 border-t text-right align-top">{it.quantity}</td>
-                    <td className="p-2 border-t text-right align-top">₹ {it.net_amount.toFixed(2)}</td>
-                    <td className="p-2 border-t text-right align-top">{it.tax_rate}%</td>
-                    <td className="p-2 border-t align-top uppercase">{it.tax_type.replace('_',' + ').toUpperCase()}</td>
-                    <td className="p-2 border-t text-right align-top">₹ {it.tax_amount.toFixed(2)}</td>
-                    <td className="p-2 border-t text-right align-top">₹ {it.line_total.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Totals + Words + Signature */}
-        <div className="px-4 mt-3 mb-4">
-          <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-7 text-[10.5px]">
-              <div className="border rounded-lg p-2.5">
-                <div className="text-[11px] font-semibold mb-1">Amount in Words</div>
-                <div className="italic leading-tight">{amountWords}</div>
-              </div>
-
-              <div className="border rounded-lg p-2 mt-2 text-[9.5px]">
-                <div className="font-semibold mb-0.5">Terms &amp; Notes</div>
-                <ul className="list-disc ml-4 leading-tight">
-                  <li>Goods once sold will not be taken back.</li>
-                  <li>Subject to Guwahati jurisdiction.</li>
-                  <li>Computer generated invoice; no physical signature required.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="col-span-5">
-              <div className="border rounded-lg p-2.5 text-[11px] space-y-1">
-                <div className="flex justify-between"><span>Subtotal</span><span>₹ {inv.subtotal.toFixed(2)}</span></div>
-                {inv.discount_amount ? <div className="flex justify-between"><span>Discount</span><span>- ₹ {inv.discount_amount.toFixed(2)}</span></div> : null}
-                {inv.shipping_amount ? <div className="flex justify-between"><span>Shipping</span><span>₹ {inv.shipping_amount.toFixed(2)}</span></div> : null}
-                {inv.tax_cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {inv.tax_cgst.toFixed(2)}</span></div> : null}
-                {inv.tax_sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {inv.tax_sgst.toFixed(2)}</span></div> : null}
-                {inv.tax_igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {inv.tax_igst.toFixed(2)}</span></div> : null}
-                <div className="border-t pt-2 mt-1 flex justify-between text-[12px] font-semibold">
-                  <span>Total Value (in numbers)</span>
-                  <span>₹ {inv.grand_total.toFixed(2)}</span>
+                <div className="border rounded-lg p-2 mt-2 text-[11px]">
+                  <div className="font-semibold">For Mugaworld Private Limited</div>
+                  <div className="h-12" />
+                  <div className="text-right">Authorised Signatory</div>
                 </div>
               </div>
-
-              <div className="border rounded-lg p-2 mt-2 text-[11px]">
-                <div className="font-semibold">For Mugaworld Private Limited</div>
-                <div className="h-12" />
-                <div className="text-right">Authorised Signatory</div>
-              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="px-4 pb-3 text-[9.5px]">
-          <div className="flex justify-between">
-            <div>Printed on {new Date().toLocaleString()}</div>
-            <div>Page 1 of 1</div>
+          {/* Screen-only footer (hidden in print to avoid extra height) */}
+          <div className="no-print px-4 pb-3 text-[9.5px] text-neutral-600">
+            <div className="flex justify-between">
+              <div>Preview scale: {Math.round(scale * 100)}%</div>
+              <div>Page 1 of 1</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
