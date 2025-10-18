@@ -235,7 +235,7 @@ export default function NewInvoicePage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Invoice Meta */}
-        <Card className="brand-card">
+        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
           <CardHeader>
             <CardTitle>Invoice Details</CardTitle>
           </CardHeader>
@@ -292,7 +292,7 @@ export default function NewInvoicePage() {
         </Card>
 
         {/* Parties */}
-        <Card className="brand-card">
+        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
           <CardHeader>
             <CardTitle>Parties</CardTitle>
           </CardHeader>
@@ -373,7 +373,7 @@ export default function NewInvoicePage() {
         </Card>
 
         {/* Line items */}
-        <Card className="brand-card">
+        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
           <CardHeader>
             <CardTitle>Items</CardTitle>
           </CardHeader>
@@ -383,7 +383,7 @@ export default function NewInvoicePage() {
               return (
                 <div
                   key={field.id}
-                  className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3"
+                  className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700"
                 >
                   <div className="md:col-span-3">
                     <Label>Description</Label>
@@ -481,7 +481,7 @@ export default function NewInvoicePage() {
         </Card>
 
         {/* Totals + Payment/QR */}
-        <Card className="brand-card">
+        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
           <CardHeader>
             <CardTitle>Totals &amp; Payment</CardTitle>
           </CardHeader>
@@ -497,7 +497,7 @@ export default function NewInvoicePage() {
                   <Input type="number" step="0.01" {...register('shipping_amount')} />
                 </div>
               </div>
-              <div className="mt-2 border rounded-md p-3 text-sm space-y-1">
+              <div className="mt-2 border rounded-md p-3 text-sm space-y-1 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>₹ {totals.subtotal.toFixed(2)}</span>
