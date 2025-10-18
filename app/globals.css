@@ -219,42 +219,37 @@
     border-color: #000000 !important;
   }
 }
-/* Print exactly the invoice canvas, nothing else */
+/* --- Print isolation + true-to-preview rendering --- */
 @media print {
-  /* Hide everything by default */
-  body * {
-    visibility: hidden !important;
-  }
+  /* 1) Print only the invoice canvas */
+  body * { visibility: hidden !important; }
+  .print-root, .print-root * { visibility: visible !important; }
 
-  /* Show only the invoice root and its children */
-  .print-root,
-  .print-root * {
-    visibility: visible !important;
-  }
+  /* 2) Remove any app chrome spacing and background */
+  html, body { background: #ffffff !important; }
 
-  /* Position invoice at top-left so it aligns with the page */
-  .print-root {
-    position: absolute !important;
-    inset: 0 !important;
-    margin: 0 !important;
-  }
+  /* 3) Let the user choose paper size in the dialog (do not force A4) */
+  @page { size: auto; margin: 10mm; } /* tweak margin if you like */
 
-  /* A4 page with 10mm margins */
-  @page {
-    size: A4;
-    margin: 10mm;
-  }
-
-  /* Keep colors/borders exactly as on screen */
-  .print-root,
-  .print-root * {
+  /* 4) Ensure colors/borders match screen */
+  .print-root, .print-root * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     background: inherit !important;
     color: inherit !important;
     border-color: inherit !important;
   }
+
+  /* 5) Kill outer frames (no black bars) but keep inner table borders */
+  .sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0 !important;
+    margin: 0 !important;
+  }
 }
+
 
 
 
