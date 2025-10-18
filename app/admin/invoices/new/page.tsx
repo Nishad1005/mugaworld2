@@ -120,6 +120,33 @@ export default function NewInvoicePage() {
             </div>
           </div>
 
+          {/* Header */}
+<div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img
+      src="/PNG copy copy.png"
+      alt="Muga World"
+      className="h-10 w-10 rounded-full ring-2 ring-brand-gold"
+    />
+    <div>
+      <div className="text-lg font-semibold tracking-wide">Create Invoice</div>
+      <div className="text-xs text-muted-foreground">
+        Mugaworld • Tax Invoice / Bill of Supply / Cash Memo
+      </div>
+    </div>
+  </div>
+  <div
+    className="hidden md:flex items-center gap-2 text-sm px-3 py-1.5 rounded-full"
+    style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
+    title="Live grand total"
+  >
+    <span className="opacity-80">Total</span>
+    <span className="font-semibold">₹ {totals.grand.toFixed(2)}</span>
+  </div>
+</div>
+
+
           <Button onClick={submit} disabled={busy}>{busy ? 'Creating…' : 'Create Invoice'}</Button>
         </CardContent>
       </Card>
