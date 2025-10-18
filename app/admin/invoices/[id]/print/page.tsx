@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Item = {
   description: string;
@@ -83,6 +83,24 @@ function toIndianWords(n: number): string {
 export default function PrintPage({ params }: { params: { id: string } }) {
   const [inv, setInv] = useState<Invoice | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+
+  // Screen preview: scale down on very small screens so the full A4 fits.
+  useEffect(() => {
+    const mm = 3.7795275591;               // px per mm (approx)
+    const a4w = 210 * mm;                   // target width in px
+    function fit() {
+      const stage = stageRef.current;
+      if (!stage) return;
+      const pad = 24;                       // stage horizontal padding
+      const vw = document.documentElement.clientWidth;
+      const scale = Math.min(1, (vw - pad * 2) / a4w);
+      stage.style.setProperty('--preview-scale', String(scale));
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -144,8 +162,33 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="print-root min-h-screen bg-neutral-50">
-      {/* Screen toolbar (hidden in print by global CSS .no-print) */}
+    <div className="print-root min-h-screen">
+      {/* screen-only style to make the preview a full A4 page */}
+      <style>{`
+        @media screen {
+          .preview-stage {
+            --preview-scale: 1;
+            background: #f3f4f6;            /* light stage */
+            padding: 12px;                  /* breathing room around page */
+          }
+          .preview-stage .sheet {
+            width: 210mm;
+            min-height: 297mm;              /* full page height on screen */
+            transform-origin: top center;
+            transform: scale(var(--preview-scale));
+            margin: 0 auto;
+            background: #ffffff;
+            color: #111827;
+            /* keep your nice on-screen frame */
+            box-shadow: 0 20px 45px rgba(0,0,0,.12);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12mm;                  /* matches print padding */
+          }
+        }
+      `}</style>
+
+      {/* Toolbar (not printed) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-end">
         <button
           onClick={() => window.print()}
@@ -155,11 +198,11 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         </button>
       </div>
 
-      {/* Invoice canvas — screen look stays; print removes outer frame via global CSS */}
-      <div className="max-w-4xl mx-auto">
-        <div className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden bg-white text-black">
+      {/* Full-page preview stage (screen) / normal container (print ignores stage) */}
+      <div ref={stageRef} className="preview-stage">
+        <div className="sheet overflow-hidden">
           {/* ===== Header ===== */}
-          <div className="p-4 pb-2">
+          <div className="p-0 pb-2">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -185,7 +228,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* ===== Meta blocks ===== */}
-          <div className="px-4 pt-2">
+          <div className="pt-2">
             <div className="grid grid-cols-12 gap-3">
               {/* Sold By */}
               <div className="col-span-6 border rounded-lg p-2.5">
@@ -260,7 +303,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* ===== Items Table ===== */}
-          <div className="px-4 mt-3">
+          <div className="mt-3">
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-[10.5px]">
                 <thead>
@@ -299,7 +342,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* ===== Totals + Words + Signature ===== */}
-          <div className="px-4 mt-3 mb-4">
+          <div className="mt-3">
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-7 text-[10.5px]">
                 <div className="border rounded-lg p-2.5">
@@ -339,10 +382,8 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* ===== end ===== */}
-        </div>
-      </div>
+        </div>{/* .sheet */}
+      </div>{/* .preview-stage */}
     </div>
   );
 }
-
