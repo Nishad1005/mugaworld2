@@ -48,7 +48,7 @@ const FormSchema = z.object({
   items: z.array(LineSchema).min(1, 'Add at least one line item'),
   discount_amount: z.coerce.number().min(0).default(0).optional(),
   shipping_amount: z.coerce.number().min(0).default(0).optional(),
-  reverse_charge: z.boolean().optional().default(false),
+  reverse_charge: z.coerce.boolean().default(false),
   qr_override_mode: z.enum(['inherit', 'image', 'upi', 'url']).default('inherit'),
   qr_override_image_url: z.string().url().optional().nullable(),
   qr_override_upi_vpa: z.string().optional().nullable(),
