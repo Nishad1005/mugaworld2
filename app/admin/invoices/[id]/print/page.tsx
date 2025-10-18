@@ -86,6 +86,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   const [inv, setInv] = useState<Invoice | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
+  const [previewing, setPreviewing] = useState(false); // 👈 two-step logic
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
   // Load invoice
@@ -106,37 +107,29 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   }, [params.id]);
 
   // Auto-fit to a single A4 page.
-  // Usable content inside 10mm margins: width 190mm, height 277mm.
   useEffect(() => {
     function fit() {
       const node = sheetRef.current;
       if (!node) return;
 
-      // Reset to natural scale to measure
       node.style.setProperty('--fit-scale', '1');
 
-      // px per mm ≈ 96/25.4 = 3.7795 (CSS px at 96dpi)
       const pxPerMm = 3.7795275591;
-      const targetW = 190 * pxPerMm;  // ~ 718 px
-      const targetH = 277 * pxPerMm;  // ~ 1047 px
+      const targetW = 190 * pxPerMm;  // content width
+      const targetH = 277 * pxPerMm;  // content height inside margins
 
-      // Ensure the sheet width is fixed to A4 content width
       node.style.width = `${targetW}px`;
 
-      // Measure natural content size
       const naturalW = node.scrollWidth;
       const naturalH = node.scrollHeight;
 
-      // Compute scale that fits BOTH dimensions
       const sW = targetW / naturalW;
       const sH = targetH / naturalH;
       const s = Math.min(1, sW, sH);
 
       node.style.setProperty('--fit-scale', String(s));
-      // Prevent spillover (printer pagination) when scaled
       node.style.height = `${targetH}px`;
       node.style.overflow = 'hidden';
-
       setScale(s);
     }
 
@@ -144,6 +137,26 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     window.addEventListener('resize', fit);
     return () => { clearTimeout(id); window.removeEventListener('resize', fit); };
   }, [inv]);
+
+  // After printing, exit preview automatically
+  useEffect(() => {
+    const after = () => setPreviewing(false);
+    window.addEventListener('afterprint', after);
+    return () => window.removeEventListener('afterprint', after);
+  }, []);
+
+  // Keyboard: Ctrl/Cmd+P triggers real print if preview is on
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!previewing) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        window.print();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewing]);
 
   const amountWords = useMemo(() => {
     if (!inv) return '';
@@ -195,17 +208,12 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="print-root min-h-screen bg-neutral-50 print:bg-white">
+    <div className={`print-root min-h-screen ${previewing ? 'preview-on' : ''} bg-neutral-50 print:bg-white`}>
       {/* Page + print rules */}
       <style>{`
-        @media print {
-          @page { size: A4; margin: 10mm; }
-          .no-print { display: none !important; }
-          body { background: #fff !important; }
-        }
+        /* Same visuals in preview and in print */
         .sheet {
-          /* A4 content width; height is set in JS to exact usable space */
-          width: 190mm; /* JS will also set px width to avoid rounding issues */
+          width: 190mm;
           transform-origin: top left;
           transform: scale(var(--fit-scale, 1));
           background: #ffffff !important;
@@ -217,25 +225,48 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
+
+        /* Remove outer frame ONLY in preview/print to avoid "black border" */
+        .preview-on .sheet,
+        @media print { .sheet { box-shadow: none !important; border: 0 !important; outline: 0 !important; } }
+
+        /* Page setup */
+        @media print {
+          @page { size: A4; margin: 10mm; }
+          .no-print { display: none !important; }
+          html, body { background: #ffffff !important; }
+        }
+
+        /* Preview mimics print: hide UI, white background */
+        .preview-on .no-print { display: none !important; }
+        .preview-on { background: #ffffff !important; }
       `}</style>
 
-      {/* Controls (screen only) */}
+      {/* Top controls (one button, two-step behaviour) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-between">
         <div className="text-sm text-neutral-600">
-          {scale < 1 ? `Fitted to ${Math.round(scale * 100)}% — single A4 page`
-                     : 'Fits on one A4 page at 100%'}
+          {previewing
+            ? 'Preview: this is exactly how it will print (A4, 10mm margins).'
+            : (scale < 1
+                ? `Fitted to ${Math.round(scale * 100)}% — will print as a single A4 page`
+                : 'Fits on one A4 page at 100%')}
         </div>
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            if (!previewing) setPreviewing(true);
+            else window.print();
+          }}
           className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
         >
-          Print
+          {previewing ? 'Print / Save as PDF' : 'Preview'}
         </button>
       </div>
 
       {/* A4 sheet */}
       <div className="max-w-4xl mx-auto">
         <div ref={sheetRef} className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden">
+          {/* ======= Your invoice content (unchanged visuals) ======= */}
+
           {/* Header */}
           <div className="p-4 pb-2">
             <div className="flex items-start justify-between gap-4">
@@ -258,7 +289,9 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                   className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
                   style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
                 >
-                  {titleRight}
+                  {(inv.invoice_type === 'bill_of_supply' ? 'Bill of Supply'
+                    : inv.invoice_type === 'cash_memo' ? 'Cash Memo' : 'Tax Invoice')}
+                  {' '} (Original for Recipient)
                 </div>
                 <div className="text-[10px] mt-1">
                   Invoice No: <span className="font-medium">{inv.invoice_no}</span>
@@ -270,7 +303,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Meta blocks (2x2) */}
+          {/* Meta blocks */}
           <div className="px-4 pt-2">
             <div className="grid grid-cols-12 gap-3">
               {/* Sold By */}
@@ -345,7 +378,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Items Table (tight) */}
+          {/* Items Table */}
           <div className="px-4 mt-3">
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-[10.5px]">
@@ -393,7 +426,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                   <div className="italic leading-tight">{amountWords}</div>
                 </div>
 
-                {/* Keep notes minimal to help fitting in one page */}
                 <div className="border rounded-lg p-2 mt-2 text-[9.5px]">
                   <div className="font-semibold mb-0.5">Terms &amp; Notes</div>
                   <ul className="list-disc ml-4 leading-tight">
@@ -427,7 +459,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Screen-only footer (hidden in print to avoid extra height) */}
+          {/* Screen-only footer (hidden in preview & print) */}
           <div className="no-print px-4 pb-3 text-[9.5px] text-neutral-600">
             <div className="flex justify-between">
               <div>Preview scale: {Math.round(scale * 100)}%</div>
@@ -439,4 +471,3 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
-
