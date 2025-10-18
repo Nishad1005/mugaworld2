@@ -28,6 +28,11 @@
     --input: 0 0% 89.8%;
     --ring: 42 68% 56%;
     --radius: 0.5rem;
+    --brand-gold: #D7A444;
+    --brand-red:  #E03631;
+    --brand-ink:  #0E0E0E;
+    --brand-sand: #F5E7C9;
+    --brand-line: #E6E6E6;
   }
 
   .dark {
@@ -50,6 +55,7 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 42 68% 56%;
+    --brand-line: #2A2A2A;
   }
 }
 
@@ -66,6 +72,23 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
   }
+}
+
+/* Brand focus ring */
+:where(input, select, textarea, button, [role="button"]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 40%, transparent);
+  border-color: var(--brand-gold);
+}
+
+/* Card polish */
+.brand-card {
+  border: 1px solid var(--brand-line);
+  border-radius: 14px;
+  background: white;
+}
+.dark .brand-card {
+  background: #111111;
 }
 
 @layer utilities {
