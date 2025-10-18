@@ -195,7 +195,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="min-h-screen bg-neutral-50 print:bg-white">
+    <div className="print-root min-h-screen bg-neutral-50 print:bg-white">
       {/* Page + print rules */}
       <style>{`
         @media print {
@@ -244,7 +244,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 <img
                   src="/PNG copy copy.png"
                   alt="Muga World"
-                  className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]"
                 />
                 <div>
                   <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
@@ -439,4 +438,3 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
-
