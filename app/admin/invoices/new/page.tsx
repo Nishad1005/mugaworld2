@@ -59,7 +59,6 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
-/* ----------------------- Page ----------------------- */
 export default function NewInvoicePage() {
   const router = useRouter();
   const supabase = createClient();
@@ -106,17 +105,13 @@ export default function NewInvoicePage() {
   // Live totals
   const totals = useMemo(() => {
     const v = watch();
-    let subtotal = 0,
-      cgst = 0,
-      sgst = 0,
-      igst = 0;
+    let subtotal = 0, cgst = 0, sgst = 0, igst = 0;
     for (const l of v.items || []) {
       const net = Number(l.unit_price) * Number(l.quantity) - Number(l.line_discount || 0);
       const taxAmt = (Number(l.tax_rate) / 100) * net;
       subtotal += net;
       if (l.tax_type === 'cgst_sgst') {
-        cgst += taxAmt / 2;
-        sgst += taxAmt / 2;
+        cgst += taxAmt / 2; sgst += taxAmt / 2;
       } else {
         igst += taxAmt;
       }
@@ -137,9 +132,7 @@ export default function NewInvoicePage() {
     setErr(null);
     setBusy(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please sign in');
 
       const payload = {
@@ -200,407 +193,264 @@ export default function NewInvoicePage() {
     }
   }
 
-  /* ----------------------- Render ----------------------- */
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* ======= BRAND HEADER ======= */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/PNG copy copy.png"
-            alt="Muga World"
-            className="h-10 w-10 rounded-full ring-2 ring-brand-gold"
-          />
-          <div>
-            <div className="text-lg font-semibold tracking-wide">Create Invoice</div>
-            <div className="text-xs text-muted-foreground">
-              Mugaworld • Tax Invoice / Bill of Supply / Cash Memo
+    <div className="invoice-surface min-h-screen">
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        {/* BRAND HEADER */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/PNG copy copy.png" alt="Muga World" className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]" />
+            <div>
+              <div className="text-lg font-semibold tracking-wide">Create Invoice</div>
+              <div className="text-xs">Mugaworld • Tax Invoice / Bill of Supply / Cash Memo</div>
             </div>
           </div>
+          <div
+            className="hidden md:flex items-center gap-2 text-sm px-3 py-1.5 rounded-full"
+            style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
+            title="Live grand total"
+          >
+            <span className="opacity-80">Total</span>
+            <span className="font-semibold">₹ {totals.grand.toFixed(2)}</span>
+          </div>
         </div>
-        <div
-          className="hidden md:flex items-center gap-2 text-sm px-3 py-1.5 rounded-full"
-          style={{
-            background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)',
-            color: '#0E0E0E',
-          }}
-          title="Live grand total"
-        >
-          <span className="opacity-80">Total</span>
-          <span className="font-semibold">₹ {totals.grand.toFixed(2)}</span>
-        </div>
-      </div>
-      {/* ======= /BRAND HEADER ======= */}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Invoice Meta */}
-        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <CardHeader>
-            <CardTitle>Invoice Details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
-            <div className="md:col-span-2">
-              <Label>Invoice Type</Label>
-              <select
-                {...register('invoice_type')}
-                className="w-full h-10 rounded-md border border-input bg-background px-3"
-              >
-                <option value="tax_invoice">Tax Invoice</option>
-                <option value="bill_of_supply">Bill of Supply</option>
-                <option value="cash_memo">Cash Memo</option>
-              </select>
-            </div>
-            <div>
-              <Label>Invoice Date</Label>
-              <Input type="date" {...register('invoice_date')} />
-              {errors.invoice_date && (
-                <p className="text-xs text-red-600">{errors.invoice_date.message}</p>
-              )}
-            </div>
-            <div>
-              <Label>Reverse Charge</Label>
-              <select
-                {...register('reverse_charge')}
-                className="w-full h-10 rounded-md border border-input bg-background px-3"
-              >
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-              </select>
-            </div>
-
-            <div>
-              <Label>Order No</Label>
-              <Input placeholder="(optional)" {...register('order_no')} />
-            </div>
-            <div>
-              <Label>Order Date</Label>
-              <Input type="date" placeholder="(optional)" {...register('order_date')} />
-            </div>
-            <div>
-              <Label>Place of Supply</Label>
-              <Input {...register('place_of_supply')} />
-              {errors.place_of_supply && (
-                <p className="text-xs text-red-600">{errors.place_of_supply.message}</p>
-              )}
-            </div>
-            <div>
-              <Label>Place of Delivery</Label>
-              <Input placeholder="(optional)" {...register('place_of_delivery')} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Parties */}
-        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <CardHeader>
-            <CardTitle>Parties</CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Billing Address</div>
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <Label>Address Line 1</Label>
-                  <Input {...register('billing.line1')} />
-                  {errors.billing?.line1 && (
-                    <p className="text-xs text-red-600">{errors.billing.line1.message}</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label>City</Label>
-                    <Input {...register('billing.city')} />
-                    {errors.billing?.city && (
-                      <p className="text-xs text-red-600">{errors.billing.city.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>State</Label>
-                    <Input {...register('billing.state')} />
-                    {errors.billing?.state && (
-                      <p className="text-xs text-red-600">{errors.billing.state.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Pincode</Label>
-                    <Input {...register('billing.pincode')} />
-                    {errors.billing?.pincode && (
-                      <p className="text-xs text-red-600">{errors.billing.pincode.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label>PAN</Label>
-                    <Input placeholder="(optional)" {...register('billing.pan')} />
-                  </div>
-                  <div>
-                    <Label>GSTIN</Label>
-                    <Input placeholder="(optional)" {...register('billing.gstin')} />
-                  </div>
-                  <div>
-                    <Label>CIN</Label>
-                    <Input placeholder="(optional)" {...register('billing.cin')} />
-                  </div>
-                </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Invoice Meta */}
+          <Card className="border">
+            <CardHeader><CardTitle>Invoice Details</CardTitle></CardHeader>
+            <CardContent className="grid md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <Label>Invoice Type</Label>
+                <select {...register('invoice_type')} className="w-full h-10 rounded-md border px-3 bg-white">
+                  <option value="tax_invoice">Tax Invoice</option>
+                  <option value="bill_of_supply">Bill of Supply</option>
+                  <option value="cash_memo">Cash Memo</option>
+                </select>
               </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Shipping Address</div>
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <Label>Address Line 1</Label>
-                  <Input placeholder="(optional)" {...register('shipping.line1')} />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label>City</Label>
-                    <Input placeholder="(optional)" {...register('shipping.city')} />
-                  </div>
-                  <div>
-                    <Label>State</Label>
-                    <Input placeholder="(optional)" {...register('shipping.state')} />
-                  </div>
-                  <div>
-                    <Label>Pincode</Label>
-                    <Input placeholder="(optional)" {...register('shipping.pincode')} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Line items */}
-        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <CardHeader>
-            <CardTitle>Items</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {fields.map((field, idx) => {
-              const prefix = `items.${idx}` as const;
-              return (
-                <div
-                  key={field.id}
-                  className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700"
-                >
-                  <div className="md:col-span-3">
-                    <Label>Description</Label>
-                    <Input
-                      placeholder="e.g., Design Service"
-                      {...register(`${prefix}.description`)}
-                    />
-                    {errors.items?.[idx]?.description && (
-                      <p className="text-xs text-red-600">
-                        {errors.items?.[idx]?.description?.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label>HSN/SAC</Label>
-                    <Input placeholder="(optional)" {...register(`${prefix}.hsn_sac`)} />
-                  </div>
-                  <div>
-                    <Label>Unit Price</Label>
-                    <Input type="number" step="0.01" {...register(`${prefix}.unit_price`)} />
-                    {errors.items?.[idx]?.unit_price && (
-                      <p className="text-xs text-red-600">
-                        {errors.items?.[idx]?.unit_price?.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Qty</Label>
-                    <Input type="number" step="1" {...register(`${prefix}.quantity`)} />
-                    {errors.items?.[idx]?.quantity && (
-                      <p className="text-xs text-red-600">
-                        {errors.items?.[idx]?.quantity?.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Discount</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      {...register(`${prefix}.line_discount`)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Tax %</Label>
-                    <Input type="number" step="0.01" {...register(`${prefix}.tax_rate`)} />
-                    {errors.items?.[idx]?.tax_rate && (
-                      <p className="text-xs text-red-600">
-                        {errors.items?.[idx]?.tax_rate?.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label>Tax Type</Label>
-                    <select
-                      {...register(`${prefix}.tax_type`)}
-                      className="w-full h-10 rounded-md border border-input bg-background px-3"
-                    >
-                      <option value="cgst_sgst">CGST+SGST</option>
-                      <option value="igst">IGST</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-1">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => remove(idx)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                append({
-                  description: '',
-                  hsn_sac: '',
-                  unit_price: 0,
-                  quantity: 1,
-                  line_discount: 0,
-                  tax_rate: 18,
-                  tax_type: 'cgst_sgst',
-                })
-              }
-            >
-              + Add Item
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Totals + Payment/QR */}
-        <Card className="brand-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-          <CardHeader>
-            <CardTitle>Totals &amp; Payment</CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Discount (₹)</Label>
-                  <Input type="number" step="0.01" {...register('discount_amount')} />
-                </div>
-                <div>
-                  <Label>Shipping (₹)</Label>
-                  <Input type="number" step="0.01" {...register('shipping_amount')} />
-                </div>
-              </div>
-              <div className="mt-2 border rounded-md p-3 text-sm space-y-1 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>₹ {totals.subtotal.toFixed(2)}</span>
-                </div>
-                {totals.cgst ? (
-                  <div className="flex justify-between">
-                    <span>CGST</span>
-                    <span>₹ {totals.cgst.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                {totals.sgst ? (
-                  <div className="flex justify-between">
-                    <span>SGST</span>
-                    <span>₹ {totals.sgst.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                {totals.igst ? (
-                  <div className="flex justify-between">
-                    <span>IGST</span>
-                    <span>₹ {totals.igst.toFixed(2)}</span>
-                  </div>
-                ) : null}
-                <div className="border-t pt-2 flex justify-between font-semibold">
-                  <span>Grand Total</span>
-                  <span>₹ {totals.grand.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
               <div>
-                <Label>QR / Payment Mode</Label>
-                <select
-                  {...register('qr_override_mode')}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3"
-                >
-                  <option value="inherit">None (hide)</option>
-                  <option value="image">Image URL</option>
-                  <option value="upi">UPI VPA</option>
-                  <option value="url">Payment URL</option>
+                <Label>Invoice Date</Label>
+                <Input type="date" {...register('invoice_date')} />
+                {errors.invoice_date && <p className="text-xs text-red-600">{errors.invoice_date.message}</p>}
+              </div>
+              <div>
+                <Label>Reverse Charge</Label>
+                <select {...register('reverse_charge')} className="w-full h-10 rounded-md border px-3 bg-white">
+                  <option value="false">No</option><option value="true">Yes</option>
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>QR Image URL</Label>
-                  <Input placeholder="https://..." {...register('qr_override_image_url')} />
-                </div>
-                <div>
-                  <Label>UPI VPA</Label>
-                  <Input placeholder="name@bank" {...register('qr_override_upi_vpa')} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Payment URL</Label>
-                  <Input placeholder="https://..." {...register('qr_override_url')} />
-                </div>
-                <div>
-                  <Label>Lock Amount (₹)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="(optional)"
-                    {...register('qr_amount_lock')}
-                  />
-                </div>
-              </div>
-
               <div>
-                <Label>Note (shown under QR)</Label>
-                <textarea
-                  rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  placeholder="(optional)"
-                  {...register('qr_note')}
-                />
+                <Label>Order No</Label>
+                <Input placeholder="(optional)" {...register('order_no')} />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <Label>Order Date</Label>
+                <Input type="date" placeholder="(optional)" {...register('order_date')} />
+              </div>
+              <div>
+                <Label>Place of Supply</Label>
+                <Input {...register('place_of_supply')} />
+                {errors.place_of_supply && <p className="text-xs text-red-600">{errors.place_of_supply.message}</p>}
+              </div>
+              <div>
+                <Label>Place of Delivery</Label>
+                <Input placeholder="(optional)" {...register('place_of_delivery')} />
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Errors & Submit */}
-        {err && <div className="text-sm text-red-600">{err}</div>}
-        <div className="flex gap-3">
-          <Button
-            className="bg-brand-ink text-white hover:opacity-90 border border-brand-gold shadow-brand"
-            type="submit"
-            disabled={busy}
-          >
-            {busy ? 'Creating…' : 'Create Invoice'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="border border-brand-gold text-brand-ink hover:bg-brand-sand/40"
-            onClick={() => router.push('/admin/invoices')}
-          >
-            Cancel
-          </Button>
-        </div>
-      </form>
+          {/* Parties */}
+          <Card className="border">
+            <CardHeader><CardTitle>Parties</CardTitle></CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Billing Address</div>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <Label>Address Line 1</Label>
+                    <Input {...register('billing.line1')} />
+                    {errors.billing?.line1 && <p className="text-xs text-red-600">{errors.billing.line1.message}</p>}
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label>City</Label>
+                      <Input {...register('billing.city')} />
+                      {errors.billing?.city && <p className="text-xs text-red-600">{errors.billing.city.message}</p>}
+                    </div>
+                    <div>
+                      <Label>State</Label>
+                      <Input {...register('billing.state')} />
+                      {errors.billing?.state && <p className="text-xs text-red-600">{errors.billing.state.message}</p>}
+                    </div>
+                    <div>
+                      <Label>Pincode</Label>
+                      <Input {...register('billing.pincode')} />
+                      {errors.billing?.pincode && <p className="text-xs text-red-600">{errors.billing.pincode.message}</p>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label>PAN</Label><Input placeholder="(optional)" {...register('billing.pan')} /></div>
+                    <div><Label>GSTIN</Label><Input placeholder="(optional)" {...register('billing.gstin')} /></div>
+                    <div><Label>CIN</Label><Input placeholder="(optional)" {...register('billing.cin')} /></div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Shipping Address</div>
+                <div className="grid grid-cols-1 gap-3">
+                  <div><Label>Address Line 1</Label><Input placeholder="(optional)" {...register('shipping.line1')} /></div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><Label>City</Label><Input placeholder="(optional)" {...register('shipping.city')} /></div>
+                    <div><Label>State</Label><Input placeholder="(optional)" {...register('shipping.state')} /></div>
+                    <div><Label>Pincode</Label><Input placeholder="(optional)" {...register('shipping.pincode')} /></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Line items */}
+          <Card className="border">
+            <CardHeader><CardTitle>Items</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {fields.map((field, idx) => {
+                const prefix = `items.${idx}` as const;
+                return (
+                  <div key={field.id} className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3">
+                    <div className="md:col-span-3">
+                      <Label>Description</Label>
+                      <Input placeholder="e.g., Design Service" {...register(`${prefix}.description`)} />
+                      {errors.items?.[idx]?.description && (
+                        <p className="text-xs text-red-600">{errors.items?.[idx]?.description?.message}</p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>HSN/SAC</Label>
+                      <Input placeholder="(optional)" {...register(`${prefix}.hsn_sac`)} />
+                    </div>
+                    <div>
+                      <Label>Unit Price</Label>
+                      <Input type="number" step="0.01" {...register(`${prefix}.unit_price`)} />
+                      {errors.items?.[idx]?.unit_price && (
+                        <p className="text-xs text-red-600">{errors.items?.[idx]?.unit_price?.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Qty</Label>
+                      <Input type="number" step="1" {...register(`${prefix}.quantity`)} />
+                      {errors.items?.[idx]?.quantity && (
+                        <p className="text-xs text-red-600">{errors.items?.[idx]?.quantity?.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Discount</Label>
+                      <Input type="number" step="0.01" placeholder="0" {...register(`${prefix}.line_discount`)} />
+                    </div>
+                    <div>
+                      <Label>Tax %</Label>
+                      <Input type="number" step="0.01" {...register(`${prefix}.tax_rate`)} />
+                      {errors.items?.[idx]?.tax_rate && (
+                        <p className="text-xs text-red-600">{errors.items?.[idx]?.tax_rate?.message}</p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>Tax Type</Label>
+                      <select {...register(`${prefix}.tax_type`)} className="w-full h-10 rounded-md border px-3 bg-white">
+                        <option value="cgst_sgst">CGST+SGST</option>
+                        <option value="igst">IGST</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-1">
+                      <Button type="button" variant="secondary" className="w-full" onClick={() => remove(idx)}>
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  append({
+                    description: '',
+                    hsn_sac: '',
+                    unit_price: 0,
+                    quantity: 1,
+                    line_discount: 0,
+                    tax_rate: 18,
+                    tax_type: 'cgst_sgst',
+                  })
+                }
+              >
+                + Add Item
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Totals + Payment/QR */}
+          <Card className="border">
+            <CardHeader><CardTitle>Totals &amp; Payment</CardTitle></CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Discount (₹)</Label><Input type="number" step="0.01" {...register('discount_amount')} /></div>
+                  <div><Label>Shipping (₹)</Label><Input type="number" step="0.01" {...register('shipping_amount')} /></div>
+                </div>
+                <div className="mt-2 border rounded-md p-3 text-sm space-y-1">
+                  <div className="flex justify-between"><span>Subtotal</span><span>₹ {totals.subtotal.toFixed(2)}</span></div>
+                  {totals.cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {totals.cgst.toFixed(2)}</span></div> : null}
+                  {totals.sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {totals.sgst.toFixed(2)}</span></div> : null}
+                  {totals.igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {totals.igst.toFixed(2)}</span></div> : null}
+                  <div className="border-t pt-2 flex justify-between font-semibold">
+                    <span>Grand Total</span><span>₹ {totals.grand.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label>QR / Payment Mode</Label>
+                  <select {...register('qr_override_mode')} className="w-full h-10 rounded-md border px-3 bg-white">
+                    <option value="inherit">None (hide)</option>
+                    <option value="image">Image URL</option>
+                    <option value="upi">UPI VPA</option>
+                    <option value="url">Payment URL</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>QR Image URL</Label><Input placeholder="https://..." {...register('qr_override_image_url')} /></div>
+                  <div><Label>UPI VPA</Label><Input placeholder="name@bank" {...register('qr_override_upi_vpa')} /></div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Payment URL</Label><Input placeholder="https://..." {...register('qr_override_url')} /></div>
+                  <div><Label>Lock Amount (₹)</Label><Input type="number" step="0.01" placeholder="(optional)" {...register('qr_amount_lock')} /></div>
+                </div>
+
+                <div>
+                  <Label>Note (shown under QR)</Label>
+                  <textarea rows={3} className="w-full rounded-md border px-3 py-2 bg-white" placeholder="(optional)" {...register('qr_note')} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Errors & Submit */}
+          {err && <div className="text-sm text-red-600">{err}</div>}
+          <div className="flex gap-3">
+            <Button className="bg-black text-white hover:opacity-90" type="submit" disabled={busy}>
+              {busy ? 'Creating…' : 'Create Invoice'}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/invoices')}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
