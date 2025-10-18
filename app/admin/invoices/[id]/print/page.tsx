@@ -145,7 +145,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="print-root min-h-screen bg-neutral-50">
-      {/* Screen toolbar (hidden in print) */}
+      {/* Screen toolbar (hidden in print by global CSS .no-print) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-end">
         <button
           onClick={() => window.print()}
@@ -155,14 +155,10 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         </button>
       </div>
 
-      {/* Invoice canvas — looks exactly like your preview.
-         The outer wrapper keeps your on-screen border/shadow.
-         Global print CSS removes that frame so no black bars in PDF/print. */}
+      {/* Invoice canvas — screen look stays; print removes outer frame via global CSS */}
       <div className="max-w-4xl mx-auto">
         <div className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden bg-white text-black">
-          {/* ===== your existing preview markup below (unchanged visually) ===== */}
-
-          {/* Header */}
+          {/* ===== Header ===== */}
           <div className="p-4 pb-2">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -188,9 +184,10 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Meta blocks */}
+          {/* ===== Meta blocks ===== */}
           <div className="px-4 pt-2">
             <div className="grid grid-cols-12 gap-3">
+              {/* Sold By */}
               <div className="col-span-6 border rounded-lg p-2.5">
                 <div className="text-[11px] font-semibold mb-1">Sold By</div>
                 <div className="text-[11px] leading-tight">
@@ -203,6 +200,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
+              {/* Buyer Addresses */}
               <div className="col-span-6 border rounded-lg p-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -239,6 +237,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
+              {/* Order / Places */}
               <div className="col-span-6 border rounded-lg p-2.5 text-[11px]">
                 <div className="grid grid-cols-2 gap-1.5">
                   <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
@@ -250,6 +249,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
+              {/* QR (optional) */}
               {qrBlock && (
                 <div className="col-span-6 border rounded-lg p-2.5">
                   <div className="text-[11px] font-semibold mb-1">Payment</div>
@@ -259,7 +259,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Items Table */}
+          {/* ===== Items Table ===== */}
           <div className="px-4 mt-3">
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-[10.5px]">
@@ -298,7 +298,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Totals + Words + Signature */}
+          {/* ===== Totals + Words + Signature ===== */}
           <div className="px-4 mt-3 mb-4">
             <div className="grid grid-cols-12 gap-3">
               <div className="col-span-7 text-[10.5px]">
@@ -345,3 +345,4 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
