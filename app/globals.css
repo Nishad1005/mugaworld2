@@ -116,3 +116,47 @@
     background-color: #D4A34C;
   }
 }
+/* ====== Dark mode readability ====== */
+.dark .brand-card {
+  background: #0b0b0b;
+  border-color: #2a2a2a;
+}
+
+/* Make all base text readable on dark */
+.dark body,
+.dark .prose,
+.dark .page,
+.dark .brand-card {
+  color: #f2f2f2;
+}
+
+/* Tables/borders in dark */
+.dark table,
+.dark .tbl,
+.dark .tbl th,
+.dark .tbl td {
+  color: #f2f2f2;
+  border-color: #3a3a3a !important;
+}
+
+/* ====== Print: force real black text ====== */
+@media print {
+  * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Keep white paper */
+  html, body, .page {
+    background: #fff !important;
+  }
+  /* Visible borders in print */
+  table, .tbl, .tbl th, .tbl td, .border, .rounded-lg, .rounded-xl {
+    border-color: #000 !important;
+  }
+  /* Don’t fade muted text when printing */
+  .text-neutral-500, .text-neutral-600, .text-muted-foreground {
+    color: #000 !important;
+  }
+}
+
