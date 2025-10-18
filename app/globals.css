@@ -159,4 +159,65 @@
     color: #000 !important;
   }
 }
+/* ========== INVOICE ALWAYS-LIGHT SURFACE ========== */
+/* Force invoice/form areas to stay white+black even in dark mode */
+.invoice-surface {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+}
+
+/* Make borders and cards look clean on a white surface */
+.invoice-surface .border,
+.invoice-surface .rounded-md,
+.invoice-surface .rounded-lg,
+.invoice-surface .rounded-xl,
+.invoice-surface .card,
+.invoice-surface .page {
+  border-color: #e5e7eb !important; /* neutral-200 */
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+}
+
+/* Inputs should stay white with dark text regardless of theme */
+.invoice-surface input,
+.invoice-surface select,
+.invoice-surface textarea {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Table text/borders on white */
+.invoice-surface table,
+.invoice-surface th,
+.invoice-surface td {
+  color: #0a0a0a !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Ensure muted text stays readable on white */
+.invoice-surface .text-muted-foreground,
+.invoice-surface .text-neutral-500,
+.invoice-surface .text-neutral-600,
+.invoice-surface .text-neutral-700 {
+  color: #0a0a0a !important;
+}
+
+/* PRINT: force white paper and black ink for the invoice only */
+@media print {
+  .invoice-surface,
+  .invoice-surface * {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .invoice-surface table,
+  .invoice-surface th,
+  .invoice-surface td,
+  .invoice-surface .border {
+    border-color: #000000 !important;
+  }
+}
+
 
