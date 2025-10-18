@@ -86,7 +86,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   const [inv, setInv] = useState<Invoice | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  const [previewing, setPreviewing] = useState(false); // 👈 two-step logic
+  const [previewing, setPreviewing] = useState(false); // keep your Print button, two-step flow
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
   // Load invoice
@@ -106,46 +106,37 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     return () => { mounted = false; };
   }, [params.id]);
 
-  // Auto-fit to a single A4 page.
+  // Auto-fit inside A4 10mm margins
   useEffect(() => {
     function fit() {
       const node = sheetRef.current;
       if (!node) return;
-
       node.style.setProperty('--fit-scale', '1');
-
       const pxPerMm = 3.7795275591;
-      const targetW = 190 * pxPerMm;  // content width
-      const targetH = 277 * pxPerMm;  // content height inside margins
-
+      const targetW = 190 * pxPerMm;  // 210-20
+      const targetH = 277 * pxPerMm;  // 297-20
       node.style.width = `${targetW}px`;
-
       const naturalW = node.scrollWidth;
       const naturalH = node.scrollHeight;
-
-      const sW = targetW / naturalW;
-      const sH = targetH / naturalH;
-      const s = Math.min(1, sW, sH);
-
+      const s = Math.min(1, targetW / naturalW, targetH / naturalH);
       node.style.setProperty('--fit-scale', String(s));
       node.style.height = `${targetH}px`;
       node.style.overflow = 'hidden';
       setScale(s);
     }
-
     const id = setTimeout(fit, 50);
     window.addEventListener('resize', fit);
     return () => { clearTimeout(id); window.removeEventListener('resize', fit); };
   }, [inv]);
 
-  // After printing, exit preview automatically
+  // Exit preview after printing
   useEffect(() => {
     const after = () => setPreviewing(false);
     window.addEventListener('afterprint', after);
     return () => window.removeEventListener('afterprint', after);
   }, []);
 
-  // Keyboard: Ctrl/Cmd+P triggers real print if preview is on
+  // If user presses Ctrl/Cmd+P in preview, use real dialog (no borders)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!previewing) return;
@@ -171,7 +162,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
       : inv.invoice_type === 'cash_memo' ? 'Cash Memo' : 'Tax Invoice') +
     ' (Original for Recipient)';
 
-  /* ---------- QR block (optional) ---------- */
   const qrBlock = (() => {
     const mode = inv.qr_override_mode || 'inherit';
     if (mode === 'image' && inv.qr_override_image_url) {
@@ -208,10 +198,21 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className={`print-root min-h-screen ${previewing ? 'preview-on' : ''} bg-neutral-50 print:bg-white`}>
-      {/* Page + print rules */}
+    <div className={`print-root min-h-screen ${previewing ? 'preview-on' : ''} bg-neutral-50`}>
+      {/* PRINT & PREVIEW RULES */}
       <style>{`
-        /* Same visuals in preview and in print */
+        /* A4 setup */
+        @media print { @page { size: A4; margin: 10mm; } }
+
+        /* Hide UI in print and in preview */
+        @media print { .no-print { display: none !important; } }
+        .preview-on .no-print { display: none !important; }
+
+        /* Remove any dark backgrounds; ensure pure white canvas */
+        @media print { html, body { background: #ffffff !important; } }
+        .preview-on { background: #ffffff !important; }
+
+        /* Sheet visuals identical in preview & print */
         .sheet {
           width: 190mm;
           transform-origin: top left;
@@ -226,46 +227,50 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           print-color-adjust: exact;
         }
 
-        /* Remove outer frame ONLY in preview/print to avoid "black border" */
+        /* *** Critical: remove border/shadow/radius in preview & print to kill black frame *** */
         .preview-on .sheet,
-        @media print { .sheet { box-shadow: none !important; border: 0 !important; outline: 0 !important; } }
+        @media print { .sheet { box-shadow: none !important; border: 0 !important; outline: 0 !important; border-radius: 0 !important; } }
 
-        /* Page setup */
-        @media print {
-          @page { size: A4; margin: 10mm; }
-          .no-print { display: none !important; }
-          html, body { background: #ffffff !important; }
-        }
-
-        /* Preview mimics print: hide UI, white background */
-        .preview-on .no-print { display: none !important; }
-        .preview-on { background: #ffffff !important; }
+        /* Optional: if your layout wrapper adds a border color, make it white in print */
+        @media print { .sheet .force-border-white { border-color: #ffffff !important; } }
       `}</style>
 
-      {/* Top controls (one button, two-step behaviour) */}
+      {/* Controls (kept; Print is still there) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-between">
         <div className="text-sm text-neutral-600">
           {previewing
             ? 'Preview: this is exactly how it will print (A4, 10mm margins).'
             : (scale < 1
-                ? `Fitted to ${Math.round(scale * 100)}% — will print as a single A4 page`
+                ? `Fitted to ${Math.round(scale * 100)}% — will print on one A4 page`
                 : 'Fits on one A4 page at 100%')}
         </div>
-        <button
-          onClick={() => {
-            if (!previewing) setPreviewing(true);
-            else window.print();
-          }}
-          className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
-        >
-          {previewing ? 'Print / Save as PDF' : 'Preview'}
-        </button>
+        <div className="flex gap-2">
+          {previewing && (
+            <button
+              onClick={() => setPreviewing(false)}
+              className="h-9 px-3 rounded-md border border-neutral-300 hover:bg-neutral-100"
+            >
+              Exit preview
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (!previewing) setPreviewing(true);   // 1st click → preview
+              else window.print();                     // 2nd click → real print dialog
+            }}
+            className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
+          >
+            Print
+          </button>
+        </div>
       </div>
 
       {/* A4 sheet */}
       <div className="max-w-4xl mx-auto">
+        {/* If you want the same rounded look on screen BUT not in print, keep border classes here;
+            our CSS strips them in preview/print */}
         <div ref={sheetRef} className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden">
-          {/* ======= Your invoice content (unchanged visuals) ======= */}
+          {/* ======= YOUR EXISTING INVOICE MARKUP STARTS ======= */}
 
           {/* Header */}
           <div className="p-4 pb-2">
@@ -459,13 +464,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* Screen-only footer (hidden in preview & print) */}
-          <div className="no-print px-4 pb-3 text-[9.5px] text-neutral-600">
-            <div className="flex justify-between">
-              <div>Preview scale: {Math.round(scale * 100)}%</div>
-              <div>Page 1 of 1</div>
-            </div>
-          </div>
+          {/* ======= YOUR EXISTING INVOICE MARKUP ENDS ======= */}
         </div>
       </div>
     </div>
