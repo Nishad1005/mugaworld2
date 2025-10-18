@@ -164,45 +164,37 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   return (
     <div className="print-root min-h-screen">
       {/* screen-only style to make the preview a full A4 page */}
-     <style>{`
-  /* SCREEN ONLY — seamless page (no stage, no grey, no extra bars) */
-  @media screen {
-    .preview-stage {
-      --preview-scale: 1;
-      background: transparent;   /* remove grey slab */
-      padding: 0;                 /* remove white gutters */
-    }
-    .preview-stage .sheet {
-      /* keep the content width comfortable but not "A4 locked" */
-      width: 100%;
-      max-width: 960px;           /* same feel as listing view */
-      min-height: auto;           /* grow with content naturally */
-      transform: none;            /* no scaling */
-      margin: 0 auto;             /* centered */
-      background: #ffffff;
-      color: #111827;
-
-      /* Gentle, minimal chrome so it blends with the site */
-      box-shadow: 0 8px 24px rgba(0,0,0,.08);
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-
-      /* breathing room inside the page */
-      padding: 24px;
-    }
-
-    /* Dark mode: keep invoice white, blend surroundings */
-    @media (prefers-color-scheme: dark) {
-      .preview-stage .sheet {
-        background: #ffffff;
-        color: #111827;
-        border-color: rgba(255,255,255,0.12);
-        box-shadow: 0 8px 24px rgba(0,0,0,.5);
-      }
-    }
-  }
-`}</style>
-
+      <style>{`
+        /* SCREEN ONLY — seamless page (no stage, no grey, no extra bars) */
+        @media screen {
+          .preview-stage {
+            --preview-scale: 1;
+            background: transparent;
+            padding: 0;
+          }
+          .preview-stage .sheet {
+            width: 100%;
+            max-width: 960px;
+            min-height: auto;
+            transform: none;
+            margin: 0 auto;
+            background: #ffffff;
+            color: #111827;
+            box-shadow: 0 8px 24px rgba(0,0,0,.08);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+          }
+          @media (prefers-color-scheme: dark) {
+            .preview-stage .sheet {
+              background: #ffffff;
+              color: #111827;
+              border-color: rgba(255,255,255,0.12);
+              box-shadow: 0 8px 24px rgba(0,0,0,.5);
+            }
+          }
+        }
+      `}</style>
 
       {/* Toolbar (not printed) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-end">
@@ -220,13 +212,21 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           {/* ===== Header ===== */}
           <div className="p-0 pb-2">
             <div className="flex items-start justify-between gap-4">
+              {/* Left: Logo + Company Name (no subline) */}
               <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-               src="/PNG copy copy.png"
-               alt="Muga World"
-               className="h-14 w-14 md:h-16 md:w-16 object-contain"  // bigger, clean edge
-              />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/PNG copy copy.png"
+                  alt="Muga World"
+                  className="h-14 w-14 md:h-16 md:w-16 object-contain"
+                />
+                <div>
+                  <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
+                  {/* subline removed per request */}
+                </div>
+              </div>
+
+              {/* Right: Badge + Invoice meta */}
               <div className="text-right">
                 <div
                   className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
@@ -234,8 +234,12 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 >
                   {titleRight}
                 </div>
-                <div className="text-[10px] mt-1">Invoice No: <span className="font-medium">{inv.invoice_no}</span></div>
-                <div className="text-[10px]">Invoice Date: <span className="font-medium">{inv.invoice_date}</span></div>
+                <div className="text-[10px] mt-1">
+                  Invoice No: <span className="font-medium">{inv.invoice_no}</span>
+                </div>
+                <div className="text-[10px]">
+                  Invoice Date: <span className="font-medium">{inv.invoice_date}</span>
+                </div>
               </div>
             </div>
           </div>
