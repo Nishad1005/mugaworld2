@@ -221,15 +221,12 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           <div className="p-0 pb-2">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/PNG copy copy.png" alt="Muga World" className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]" />
-                <div>
-                  <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
-                  <div className="text-[10px]">
-                    ABC Road, Guwahati, Assam • GSTIN: XXABCDE1234F1Z5 • CIN: U12345AS2024PTC000000
-                  </div>
-                </div>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+               src="/PNG copy copy.png"
+               alt="Muga World"
+               className="h-14 w-14 md:h-16 md:w-16 object-contain"  // bigger, clean edge
+              />
               <div className="text-right">
                 <div
                   className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
