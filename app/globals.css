@@ -219,5 +219,42 @@
     border-color: #000000 !important;
   }
 }
+/* Print exactly the invoice canvas, nothing else */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the invoice root and its children */
+  .print-root,
+  .print-root * {
+    visibility: visible !important;
+  }
+
+  /* Position invoice at top-left so it aligns with the page */
+  .print-root {
+    position: absolute !important;
+    inset: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* A4 page with 10mm margins */
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* Keep colors/borders exactly as on screen */
+  .print-root,
+  .print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: inherit !important;
+    color: inherit !important;
+    border-color: inherit !important;
+  }
+}
+
 
 
