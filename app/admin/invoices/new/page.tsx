@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+/* ----------------------- Schemas ----------------------- */
 const LineSchema = z.object({
   description: z.string().min(1, 'Required'),
   hsn_sac: z.string().optional().nullable(),
@@ -58,9 +59,11 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
+/* ----------------------- Page ----------------------- */
 export default function NewInvoicePage() {
   const router = useRouter();
   const supabase = createClient();
+
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -80,15 +83,17 @@ export default function NewInvoicePage() {
       place_of_supply: 'Assam',
       billing: { line1: '', city: '', state: '', pincode: '' },
       shipping: { line1: '', city: '', state: '', pincode: '' },
-      items: [{
-        description: '',
-        hsn_sac: '',
-        unit_price: 0,
-        quantity: 1,
-        line_discount: 0,
-        tax_rate: 18,
-        tax_type: 'cgst_sgst',
-      }],
+      items: [
+        {
+          description: '',
+          hsn_sac: '',
+          unit_price: 0,
+          quantity: 1,
+          line_discount: 0,
+          tax_rate: 18,
+          tax_type: 'cgst_sgst',
+        },
+      ],
       discount_amount: 0,
       shipping_amount: 0,
       reverse_charge: false,
@@ -101,12 +106,20 @@ export default function NewInvoicePage() {
   // Live totals
   const totals = useMemo(() => {
     const v = watch();
-    let subtotal = 0, cgst = 0, sgst = 0, igst = 0;
+    let subtotal = 0,
+      cgst = 0,
+      sgst = 0,
+      igst = 0;
     for (const l of v.items || []) {
-      const net = (Number(l.unit_price) * Number(l.quantity)) - Number(l.line_discount || 0);
+      const net = Number(l.unit_price) * Number(l.quantity) - Number(l.line_discount || 0);
       const taxAmt = (Number(l.tax_rate) / 100) * net;
       subtotal += net;
-      if (l.tax_type === 'cgst_sgst') { cgst += taxAmt / 2; sgst += taxAmt / 2; } else { igst += taxAmt; }
+      if (l.tax_type === 'cgst_sgst') {
+        cgst += taxAmt / 2;
+        sgst += taxAmt / 2;
+      } else {
+        igst += taxAmt;
+      }
     }
     const discount = Number(v.discount_amount || 0);
     const shipping = Number(v.shipping_amount || 0);
@@ -124,7 +137,9 @@ export default function NewInvoicePage() {
     setErr(null);
     setBusy(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Please sign in');
 
       const payload = {
@@ -150,7 +165,7 @@ export default function NewInvoicePage() {
           state: values.shipping.state || null,
           pincode: values.shipping.pincode || null,
         },
-        items: values.items.map(l => ({
+        items: values.items.map((l) => ({
           description: l.description,
           hsn_sac: l.hsn_sac || null,
           unit_price: Number(l.unit_price),
@@ -185,9 +200,10 @@ export default function NewInvoicePage() {
     }
   }
 
+  /* ----------------------- Render ----------------------- */
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* ======= BRAND HEADER (Point 1) ======= */}
+      {/* ======= BRAND HEADER ======= */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -205,7 +221,10 @@ export default function NewInvoicePage() {
         </div>
         <div
           className="hidden md:flex items-center gap-2 text-sm px-3 py-1.5 rounded-full"
-          style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
+          style={{
+            background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)',
+            color: '#0E0E0E',
+          }}
           title="Live grand total"
         >
           <span className="opacity-80">Total</span>
@@ -217,11 +236,16 @@ export default function NewInvoicePage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Invoice Meta */}
         <Card className="brand-card">
-          <CardHeader><CardTitle>Invoice Details</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Invoice Details</CardTitle>
+          </CardHeader>
           <CardContent className="grid md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label>Invoice Type</Label>
-              <select {...register('invoice_type')} className="w-full h-10 rounded-md border border-input bg-background px-3">
+              <select
+                {...register('invoice_type')}
+                className="w-full h-10 rounded-md border border-input bg-background px-3"
+              >
                 <option value="tax_invoice">Tax Invoice</option>
                 <option value="bill_of_supply">Bill of Supply</option>
                 <option value="cash_memo">Cash Memo</option>
@@ -230,11 +254,16 @@ export default function NewInvoicePage() {
             <div>
               <Label>Invoice Date</Label>
               <Input type="date" {...register('invoice_date')} />
-              {errors.invoice_date && <p className="text-xs text-red-600">{errors.invoice_date.message}</p>}
+              {errors.invoice_date && (
+                <p className="text-xs text-red-600">{errors.invoice_date.message}</p>
+              )}
             </div>
             <div>
               <Label>Reverse Charge</Label>
-              <select {...register('reverse_charge')} className="w-full h-10 rounded-md border border-input bg-background px-3">
+              <select
+                {...register('reverse_charge')}
+                className="w-full h-10 rounded-md border border-input bg-background px-3"
+              >
                 <option value="false">No</option>
                 <option value="true">Yes</option>
               </select>
@@ -251,7 +280,9 @@ export default function NewInvoicePage() {
             <div>
               <Label>Place of Supply</Label>
               <Input {...register('place_of_supply')} />
-              {errors.place_of_supply && <p className="text-xs text-red-600">{errors.place_of_supply.message}</p>}
+              {errors.place_of_supply && (
+                <p className="text-xs text-red-600">{errors.place_of_supply.message}</p>
+              )}
             </div>
             <div>
               <Label>Place of Delivery</Label>
@@ -262,7 +293,9 @@ export default function NewInvoicePage() {
 
         {/* Parties */}
         <Card className="brand-card">
-          <CardHeader><CardTitle>Parties</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Parties</CardTitle>
+          </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <div className="text-sm font-medium">Billing Address</div>
@@ -270,23 +303,31 @@ export default function NewInvoicePage() {
                 <div>
                   <Label>Address Line 1</Label>
                   <Input {...register('billing.line1')} />
-                  {errors.billing?.line1 && <p className="text-xs text-red-600">{errors.billing.line1.message}</p>}
+                  {errors.billing?.line1 && (
+                    <p className="text-xs text-red-600">{errors.billing.line1.message}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label>City</Label>
                     <Input {...register('billing.city')} />
-                    {errors.billing?.city && <p className="text-xs text-red-600">{errors.billing.city.message}</p>}
+                    {errors.billing?.city && (
+                      <p className="text-xs text-red-600">{errors.billing.city.message}</p>
+                    )}
                   </div>
                   <div>
                     <Label>State</Label>
                     <Input {...register('billing.state')} />
-                    {errors.billing?.state && <p className="text-xs text-red-600">{errors.billing.state.message}</p>}
+                    {errors.billing?.state && (
+                      <p className="text-xs text-red-600">{errors.billing.state.message}</p>
+                    )}
                   </div>
                   <div>
                     <Label>Pincode</Label>
                     <Input {...register('billing.pincode')} />
-                    {errors.billing?.pincode && <p className="text-xs text-red-600">{errors.billing.pincode.message}</p>}
+                    {errors.billing?.pincode && (
+                      <p className="text-xs text-red-600">{errors.billing.pincode.message}</p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -333,16 +374,28 @@ export default function NewInvoicePage() {
 
         {/* Line items */}
         <Card className="brand-card">
-          <CardHeader><CardTitle>Items</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Items</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             {fields.map((field, idx) => {
               const prefix = `items.${idx}` as const;
               return (
-                <div key={field.id} className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3">
+                <div
+                  key={field.id}
+                  className="grid md:grid-cols-12 gap-3 items-end border rounded-md p-3"
+                >
                   <div className="md:col-span-3">
                     <Label>Description</Label>
-                    <Input placeholder="e.g., Design Service" {...register(`${prefix}.description`)} />
-                    {errors.items?.[idx]?.description && <p className="text-xs text-red-600">{errors.items?.[idx]?.description?.message}</p>}
+                    <Input
+                      placeholder="e.g., Design Service"
+                      {...register(`${prefix}.description`)}
+                    />
+                    {errors.items?.[idx]?.description && (
+                      <p className="text-xs text-red-600">
+                        {errors.items?.[idx]?.description?.message}
+                      </p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <Label>HSN/SAC</Label>
@@ -351,31 +404,58 @@ export default function NewInvoicePage() {
                   <div>
                     <Label>Unit Price</Label>
                     <Input type="number" step="0.01" {...register(`${prefix}.unit_price`)} />
-                    {errors.items?.[idx]?.unit_price && <p className="text-xs text-red-600">{errors.items?.[idx]?.unit_price?.message}</p>}
+                    {errors.items?.[idx]?.unit_price && (
+                      <p className="text-xs text-red-600">
+                        {errors.items?.[idx]?.unit_price?.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Qty</Label>
                     <Input type="number" step="1" {...register(`${prefix}.quantity`)} />
-                    {errors.items?.[idx]?.quantity && <p className="text-xs text-red-600">{errors.items?.[idx]?.quantity?.message}</p>}
+                    {errors.items?.[idx]?.quantity && (
+                      <p className="text-xs text-red-600">
+                        {errors.items?.[idx]?.quantity?.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Discount</Label>
-                    <Input type="number" step="0.01" placeholder="0" {...register(`${prefix}.line_discount`)} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0"
+                      {...register(`${prefix}.line_discount`)}
+                    />
                   </div>
                   <div>
                     <Label>Tax %</Label>
                     <Input type="number" step="0.01" {...register(`${prefix}.tax_rate`)} />
-                    {errors.items?.[idx]?.tax_rate && <p className="text-xs text-red-600">{errors.items?.[idx]?.tax_rate?.message}</p>}
+                    {errors.items?.[idx]?.tax_rate && (
+                      <p className="text-xs text-red-600">
+                        {errors.items?.[idx]?.tax_rate?.message}
+                      </p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <Label>Tax Type</Label>
-                    <select {...register(`${prefix}.tax_type`)} className="w-full h-10 rounded-md border border-input bg-background px-3">
+                    <select
+                      {...register(`${prefix}.tax_type`)}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3"
+                    >
                       <option value="cgst_sgst">CGST+SGST</option>
                       <option value="igst">IGST</option>
                     </select>
                   </div>
                   <div className="md:col-span-1">
-                    <Button type="button" variant="secondary" className="w-full" onClick={() => remove(idx)}>Remove</Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => remove(idx)}
+                    >
+                      Remove
+                    </Button>
                   </div>
                 </div>
               );
@@ -383,15 +463,17 @@ export default function NewInvoicePage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => append({
-                description: '',
-                hsn_sac: '',
-                unit_price: 0,
-                quantity: 1,
-                line_discount: 0,
-                tax_rate: 18,
-                tax_type: 'cgst_sgst',
-              })}
+              onClick={() =>
+                append({
+                  description: '',
+                  hsn_sac: '',
+                  unit_price: 0,
+                  quantity: 1,
+                  line_discount: 0,
+                  tax_rate: 18,
+                  tax_type: 'cgst_sgst',
+                })
+              }
             >
               + Add Item
             </Button>
@@ -400,7 +482,9 @@ export default function NewInvoicePage() {
 
         {/* Totals + Payment/QR */}
         <Card className="brand-card">
-          <CardHeader><CardTitle>Totals & Payment</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Totals &amp; Payment</CardTitle>
+          </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -414,12 +498,31 @@ export default function NewInvoicePage() {
                 </div>
               </div>
               <div className="mt-2 border rounded-md p-3 text-sm space-y-1">
-                <div className="flex justify-between"><span>Subtotal</span><span>₹ {totals.subtotal.toFixed(2)}</span></div>
-                {totals.cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {totals.cgst.toFixed(2)}</span></div> : null}
-                {totals.sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {totals.sgst.toFixed(2)}</span></div> : null}
-                {totals.igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {totals.igst.toFixed(2)}</span></div> : null}
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>₹ {totals.subtotal.toFixed(2)}</span>
+                </div>
+                {totals.cgst ? (
+                  <div className="flex justify-between">
+                    <span>CGST</span>
+                    <span>₹ {totals.cgst.toFixed(2)}</span>
+                  </div>
+                ) : null}
+                {totals.sgst ? (
+                  <div className="flex justify-between">
+                    <span>SGST</span>
+                    <span>₹ {totals.sgst.toFixed(2)}</span>
+                  </div>
+                ) : null}
+                {totals.igst ? (
+                  <div className="flex justify-between">
+                    <span>IGST</span>
+                    <span>₹ {totals.igst.toFixed(2)}</span>
+                  </div>
+                ) : null}
                 <div className="border-t pt-2 flex justify-between font-semibold">
-                  <span>Grand Total</span><span>₹ {totals.grand.toFixed(2)}</span>
+                  <span>Grand Total</span>
+                  <span>₹ {totals.grand.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -427,7 +530,10 @@ export default function NewInvoicePage() {
             <div className="space-y-3">
               <div>
                 <Label>QR / Payment Mode</Label>
-                <select {...register('qr_override_mode')} className="w-full h-10 rounded-md border border-input bg-background px-3">
+                <select
+                  {...register('qr_override_mode')}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3"
+                >
                   <option value="inherit">None (hide)</option>
                   <option value="image">Image URL</option>
                   <option value="upi">UPI VPA</option>
@@ -436,3 +542,65 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>QR Image URL</Label>
+                  <Input placeholder="https://..." {...register('qr_override_image_url')} />
+                </div>
+                <div>
+                  <Label>UPI VPA</Label>
+                  <Input placeholder="name@bank" {...register('qr_override_upi_vpa')} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Payment URL</Label>
+                  <Input placeholder="https://..." {...register('qr_override_url')} />
+                </div>
+                <div>
+                  <Label>Lock Amount (₹)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="(optional)"
+                    {...register('qr_amount_lock')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Note (shown under QR)</Label>
+                <textarea
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  placeholder="(optional)"
+                  {...register('qr_note')}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Errors & Submit */}
+        {err && <div className="text-sm text-red-600">{err}</div>}
+        <div className="flex gap-3">
+          <Button
+            className="bg-brand-ink text-white hover:opacity-90 border border-brand-gold shadow-brand"
+            type="submit"
+            disabled={busy}
+          >
+            {busy ? 'Creating…' : 'Create Invoice'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="border border-brand-gold text-brand-ink hover:bg-brand-sand/40"
+            onClick={() => router.push('/admin/invoices')}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
