@@ -164,29 +164,45 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   return (
     <div className="print-root min-h-screen">
       {/* screen-only style to make the preview a full A4 page */}
-      <style>{`
-        @media screen {
-          .preview-stage {
-            --preview-scale: 1;
-            background: #f3f4f6;            /* light stage */
-            padding: 12px;                  /* breathing room around page */
-          }
-          .preview-stage .sheet {
-            width: 210mm;
-            min-height: 297mm;              /* full page height on screen */
-            transform-origin: top center;
-            transform: scale(var(--preview-scale));
-            margin: 0 auto;
-            background: #ffffff;
-            color: #111827;
-            /* keep your nice on-screen frame */
-            box-shadow: 0 20px 45px rgba(0,0,0,.12);
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 12mm;                  /* matches print padding */
-          }
-        }
-      `}</style>
+     <style>{`
+  /* SCREEN ONLY — seamless page (no stage, no grey, no extra bars) */
+  @media screen {
+    .preview-stage {
+      --preview-scale: 1;
+      background: transparent;   /* remove grey slab */
+      padding: 0;                 /* remove white gutters */
+    }
+    .preview-stage .sheet {
+      /* keep the content width comfortable but not "A4 locked" */
+      width: 100%;
+      max-width: 960px;           /* same feel as listing view */
+      min-height: auto;           /* grow with content naturally */
+      transform: none;            /* no scaling */
+      margin: 0 auto;             /* centered */
+      background: #ffffff;
+      color: #111827;
+
+      /* Gentle, minimal chrome so it blends with the site */
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+
+      /* breathing room inside the page */
+      padding: 24px;
+    }
+
+    /* Dark mode: keep invoice white, blend surroundings */
+    @media (prefers-color-scheme: dark) {
+      .preview-stage .sheet {
+        background: #ffffff;
+        color: #111827;
+        border-color: rgba(255,255,255,0.12);
+        box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      }
+    }
+  }
+`}</style>
+
 
       {/* Toolbar (not printed) */}
       <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-end">
