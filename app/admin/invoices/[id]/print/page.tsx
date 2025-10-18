@@ -1,35 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-/* ---------- Amount in words (Indian) ---------- */
-function toIndianWords(n: number): string {
-  if (!Number.isFinite(n)) return '';
-  const units = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-  const tens  = ['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-  const two = (num:number) => num < 20 ? units[num] : (tens[Math.floor(num/10)] + (num%10 ? ' ' + units[num%10] : ''));
-  const three = (num:number) => {
-    const h = Math.floor(num/100), r = num%100;
-    return (h ? units[h] + ' Hundred' + (r ? ' and ' : '') : '') + (r ? two(r) : '');
-  };
-  const num = Math.round(n);
-  if (num === 0) return 'Zero Rupees';
-  let x = num;
-  const crore = Math.floor(x/10000000); x%=10000000;
-  const lakh  = Math.floor(x/100000);  x%=100000;
-  const thou  = Math.floor(x/1000);    x%=1000;
-  const hund  = Math.floor(x/100);     x%=100;
-  const rest  = x;
-  const parts:string[] = [];
-  if (crore) parts.push(three(crore) + ' Crore');
-  if (lakh)  parts.push(three(lakh)  + ' Lakh');
-  if (thou)  parts.push(three(thou)  + ' Thousand');
-  if (hund)  parts.push(units[hund]  + ' Hundred');
-  if (rest)  parts.push((crore||lakh||thou||hund) && rest<100 ? 'and ' + two(rest) : two(rest));
-  return parts.join(' ').replace(/\s+/g,' ').trim() + ' Rupees';
-}
-
-/* ---------- Types (align with your API) ---------- */
 type Item = {
   description: string;
   hsn_sac: string | null;
@@ -82,14 +54,36 @@ type Invoice = {
   invoice_items: Item[];
 };
 
+function toIndianWords(n: number): string {
+  if (!Number.isFinite(n)) return '';
+  const units = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens  = ['','', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two = (num:number) => num < 20 ? units[num] : (tens[Math.floor(num/10)] + (num%10 ? ' ' + units[num%10] : ''));
+  const three = (num:number) => {
+    const h = Math.floor(num/100), r = num%100;
+    return (h ? units[h] + ' Hundred' + (r ? ' and ' : '') : '') + (r ? two(r) : '');
+  };
+  const num = Math.round(n);
+  if (num === 0) return 'Zero Rupees';
+  let x = num;
+  const crore = Math.floor(x/10000000); x%=10000000;
+  const lakh  = Math.floor(x/100000);  x%=100000;
+  const thou  = Math.floor(x/1000);    x%=1000;
+  const hund  = Math.floor(x/100);     x%=100;
+  const rest  = x;
+  const parts:string[] = [];
+  if (crore) parts.push(three(crore) + ' Crore');
+  if (lakh)  parts.push(three(lakh)  + ' Lakh');
+  if (thou)  parts.push(three(thou)  + ' Thousand');
+  if (hund)  parts.push(units[hund]  + ' Hundred');
+  if (rest)  parts.push((crore||lakh||thou||hund) && rest<100 ? 'and ' + two(rest) : two(rest));
+  return parts.join(' ').replace(/\s+/g,' ').trim() + ' Rupees';
+}
+
 export default function PrintPage({ params }: { params: { id: string } }) {
   const [inv, setInv] = useState<Invoice | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [scale, setScale] = useState(1);
-  const [previewing, setPreviewing] = useState(false); // keep your Print button, two-step flow
-  const sheetRef = useRef<HTMLDivElement | null>(null);
 
-  // Load invoice
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -97,7 +91,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         const r = await fetch(`/api/invoices/${params.id}`, { cache: 'no-store' });
         const t = await r.text();
         if (!r.ok) throw new Error(t);
-        const data = JSON.parse(t);
+        const data = JSON.parse(t) as Invoice;
         if (mounted) setInv(data);
       } catch (e:any) {
         if (mounted) setErr(e?.message || 'Failed to load invoice');
@@ -106,53 +100,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     return () => { mounted = false; };
   }, [params.id]);
 
-  // Auto-fit inside A4 10mm margins
-  useEffect(() => {
-    function fit() {
-      const node = sheetRef.current;
-      if (!node) return;
-      node.style.setProperty('--fit-scale', '1');
-      const pxPerMm = 3.7795275591;
-      const targetW = 190 * pxPerMm;  // 210-20
-      const targetH = 277 * pxPerMm;  // 297-20
-      node.style.width = `${targetW}px`;
-      const naturalW = node.scrollWidth;
-      const naturalH = node.scrollHeight;
-      const s = Math.min(1, targetW / naturalW, targetH / naturalH);
-      node.style.setProperty('--fit-scale', String(s));
-      node.style.height = `${targetH}px`;
-      node.style.overflow = 'hidden';
-      setScale(s);
-    }
-    const id = setTimeout(fit, 50);
-    window.addEventListener('resize', fit);
-    return () => { clearTimeout(id); window.removeEventListener('resize', fit); };
-  }, [inv]);
-
-  // Exit preview after printing
-  useEffect(() => {
-    const after = () => setPreviewing(false);
-    window.addEventListener('afterprint', after);
-    return () => window.removeEventListener('afterprint', after);
-  }, []);
-
-  // If user presses Ctrl/Cmd+P in preview, use real dialog (no borders)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!previewing) return;
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        window.print();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [previewing]);
-
-  const amountWords = useMemo(() => {
-    if (!inv) return '';
-    return inv.amount_in_words || toIndianWords(inv.grand_total);
-  }, [inv]);
+  const words = useMemo(() => inv ? (inv.amount_in_words || toIndianWords(inv.grand_total)) : '', [inv]);
 
   if (err) return <div className="p-6 text-red-600">{err}</div>;
   if (!inv) return <div className="p-6">Loading…</div>;
@@ -187,9 +135,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     if (mode === 'url' && inv.qr_override_url) {
       return (
         <div className="text-[10px]">
-          <a className="underline" href={inv.qr_override_url} target="_blank" rel="noreferrer">
-            Payment Link
-          </a>
+          <a className="underline" href={inv.qr_override_url} target="_blank" rel="noreferrer">Payment Link</a>
           {inv.qr_note && <div className="mt-0.5">{inv.qr_note}</div>}
         </div>
       );
@@ -198,90 +144,30 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className={`print-root min-h-screen ${previewing ? 'preview-on' : ''} bg-neutral-50`}>
-      {/* PRINT & PREVIEW RULES */}
-      <style>{`
-        /* A4 setup */
-        @media print { @page { size: A4; margin: 10mm; } }
-
-        /* Hide UI in print and in preview */
-        @media print { .no-print { display: none !important; } }
-        .preview-on .no-print { display: none !important; }
-
-        /* Remove any dark backgrounds; ensure pure white canvas */
-        @media print { html, body { background: #ffffff !important; } }
-        .preview-on { background: #ffffff !important; }
-
-        /* Sheet visuals identical in preview & print */
-        .sheet {
-          width: 190mm;
-          transform-origin: top left;
-          transform: scale(var(--fit-scale, 1));
-          background: #ffffff !important;
-          color: #0a0a0a !important;
-        }
-        .sheet * {
-          background: inherit !important;
-          color: inherit !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-        /* *** Critical: remove border/shadow/radius in preview & print to kill black frame *** */
-        .preview-on .sheet,
-        @media print { .sheet { box-shadow: none !important; border: 0 !important; outline: 0 !important; border-radius: 0 !important; } }
-
-        /* Optional: if your layout wrapper adds a border color, make it white in print */
-        @media print { .sheet .force-border-white { border-color: #ffffff !important; } }
-      `}</style>
-
-      {/* Controls (kept; Print is still there) */}
-      <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-between">
-        <div className="text-sm text-neutral-600">
-          {previewing
-            ? 'Preview: this is exactly how it will print (A4, 10mm margins).'
-            : (scale < 1
-                ? `Fitted to ${Math.round(scale * 100)}% — will print on one A4 page`
-                : 'Fits on one A4 page at 100%')}
-        </div>
-        <div className="flex gap-2">
-          {previewing && (
-            <button
-              onClick={() => setPreviewing(false)}
-              className="h-9 px-3 rounded-md border border-neutral-300 hover:bg-neutral-100"
-            >
-              Exit preview
-            </button>
-          )}
-          <button
-            onClick={() => {
-              if (!previewing) setPreviewing(true);   // 1st click → preview
-              else window.print();                     // 2nd click → real print dialog
-            }}
-            className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
-          >
-            Print
-          </button>
-        </div>
+    <div className="print-root min-h-screen bg-neutral-50">
+      {/* Screen toolbar (hidden in print) */}
+      <div className="no-print max-w-4xl mx-auto mb-3 flex items-center justify-end">
+        <button
+          onClick={() => window.print()}
+          className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90"
+        >
+          Print
+        </button>
       </div>
 
-      {/* A4 sheet */}
+      {/* Invoice canvas — looks exactly like your preview.
+         The outer wrapper keeps your on-screen border/shadow.
+         Global print CSS removes that frame so no black bars in PDF/print. */}
       <div className="max-w-4xl mx-auto">
-        {/* If you want the same rounded look on screen BUT not in print, keep border classes here;
-            our CSS strips them in preview/print */}
-        <div ref={sheetRef} className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden">
-          {/* ======= YOUR EXISTING INVOICE MARKUP STARTS ======= */}
+        <div className="sheet mx-auto rounded-xl border border-neutral-200 shadow-xl overflow-hidden bg-white text-black">
+          {/* ===== your existing preview markup below (unchanged visually) ===== */}
 
           {/* Header */}
           <div className="p-4 pb-2">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/PNG copy copy.png"
-                  alt="Muga World"
-                  className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]"
-                />
+                <img src="/PNG copy copy.png" alt="Muga World" className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]" />
                 <div>
                   <div className="text-[16px] font-semibold tracking-wide">Mugaworld Private Limited</div>
                   <div className="text-[10px]">
@@ -294,16 +180,10 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                   className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full"
                   style={{ background: 'linear-gradient(90deg, #D7A444 0%, #E03631 100%)', color: '#0E0E0E' }}
                 >
-                  {(inv.invoice_type === 'bill_of_supply' ? 'Bill of Supply'
-                    : inv.invoice_type === 'cash_memo' ? 'Cash Memo' : 'Tax Invoice')}
-                  {' '} (Original for Recipient)
+                  {titleRight}
                 </div>
-                <div className="text-[10px] mt-1">
-                  Invoice No: <span className="font-medium">{inv.invoice_no}</span>
-                </div>
-                <div className="text-[10px]">
-                  Invoice Date: <span className="font-medium">{inv.invoice_date}</span>
-                </div>
+                <div className="text-[10px] mt-1">Invoice No: <span className="font-medium">{inv.invoice_no}</span></div>
+                <div className="text-[10px]">Invoice Date: <span className="font-medium">{inv.invoice_date}</span></div>
               </div>
             </div>
           </div>
@@ -311,7 +191,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
           {/* Meta blocks */}
           <div className="px-4 pt-2">
             <div className="grid grid-cols-12 gap-3">
-              {/* Sold By */}
               <div className="col-span-6 border rounded-lg p-2.5">
                 <div className="text-[11px] font-semibold mb-1">Sold By</div>
                 <div className="text-[11px] leading-tight">
@@ -324,7 +203,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
-              {/* Buyer Addresses */}
               <div className="col-span-6 border rounded-lg p-2.5">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -361,7 +239,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
-              {/* Order / Places */}
               <div className="col-span-6 border rounded-lg p-2.5 text-[11px]">
                 <div className="grid grid-cols-2 gap-1.5">
                   <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
@@ -373,7 +250,6 @@ export default function PrintPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
 
-              {/* QR (optional) */}
               {qrBlock && (
                 <div className="col-span-6 border rounded-lg p-2.5">
                   <div className="text-[11px] font-semibold mb-1">Payment</div>
@@ -428,9 +304,8 @@ export default function PrintPage({ params }: { params: { id: string } }) {
               <div className="col-span-7 text-[10.5px]">
                 <div className="border rounded-lg p-2.5">
                   <div className="text-[11px] font-semibold mb-1">Amount in Words</div>
-                  <div className="italic leading-tight">{amountWords}</div>
+                  <div className="italic leading-tight">{words}</div>
                 </div>
-
                 <div className="border rounded-lg p-2 mt-2 text-[9.5px]">
                   <div className="font-semibold mb-0.5">Terms &amp; Notes</div>
                   <ul className="list-disc ml-4 leading-tight">
@@ -464,7 +339,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
           </div>
 
-          {/* ======= YOUR EXISTING INVOICE MARKUP ENDS ======= */}
+          {/* ===== end ===== */}
         </div>
       </div>
     </div>
