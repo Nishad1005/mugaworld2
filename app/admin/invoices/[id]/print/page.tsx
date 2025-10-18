@@ -163,7 +163,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
   })();
 
   return (
-    <div className="bg-neutral-50 print:bg-white min-h-screen py-6 print:py-0">
+    <div className="bg-neutral-50 dark:bg-neutral-900 print:bg-white min-h-screen py-6 print:py-0">
       {/* Print CSS */}
       <style>{`
         @media print {
@@ -177,9 +177,9 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         }
       `}</style>
 
-      <div className="max-w-4xl mx-auto page bg-white shadow-xl rounded-xl border border-neutral-200 overflow-hidden">
+      <div className="max-w-4xl mx-auto page bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 print:text-black shadow-xl rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
         {/* Top control bar (hidden in print) */}
-        <div className="no-print flex justify-end gap-2 p-3 border-b">
+        <div className="no-print flex justify-end gap-2 p-3 border-b dark:border-neutral-700">
           <button onClick={() => window.print()} className="h-9 px-3 rounded-md bg-black text-white hover:opacity-90">
             Print
           </button>
@@ -194,7 +194,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
               <div>
                 <div className="text-[18px] font-semibold tracking-wide">Mugaworld Private Limited</div>
                 {/* Replace with company settings when available */}
-                <div className="text-[11px] text-neutral-600">
+                <div className="text-[11px] text-neutral-700 dark:text-neutral-300">
                   ABC Road, Guwahati, Assam • GSTIN: XXABCDE1234F1Z5 • CIN: U12345AS2024PTC000000
                 </div>
               </div>
@@ -206,8 +206,12 @@ export default function PrintPage({ params }: { params: { id: string } }) {
               >
                 {titleRight}
               </div>
-              <div className="text-[11px] text-neutral-500 mt-1">Invoice No: <span className="font-medium text-neutral-800">{inv.invoice_no}</span></div>
-              <div className="text-[11px] text-neutral-500">Invoice Date: <span className="font-medium text-neutral-800">{inv.invoice_date}</span></div>
+              <div className="text-[11px] text-neutral-700 dark:text-neutral-300 mt-1">
+                Invoice No: <span className="font-medium text-neutral-800 dark:text-neutral-100">{inv.invoice_no}</span>
+              </div>
+              <div className="text-[11px] text-neutral-700 dark:text-neutral-300">
+                Invoice Date: <span className="font-medium text-neutral-800 dark:text-neutral-100">{inv.invoice_date}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -216,7 +220,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         <div className="px-6 pt-2">
           <div className="grid grid-cols-12 gap-4">
             {/* Sold By */}
-            <div className="col-span-6 border rounded-lg p-3 avoid-break">
+            <div className="col-span-6 border rounded-lg p-3 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
               <div className="text-[12px] font-semibold mb-1">Sold By</div>
               <div className="text-[12px] leading-[1.15]">
                 Mugaworld Private Limited<br />ABC Road, Guwahati, Assam
@@ -229,7 +233,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Buyer Addresses */}
-            <div className="col-span-6 border rounded-lg p-3 avoid-break">
+            <div className="col-span-6 border rounded-lg p-3 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-[12px] font-semibold mb-1">Billing Address</div>
@@ -266,7 +270,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Order / Places */}
-            <div className="col-span-6 border rounded-lg p-3 text-[12px] avoid-break">
+            <div className="col-span-6 border rounded-lg p-3 text-[12px] avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
               <div className="grid grid-cols-2 gap-2">
                 <div>Order No: <span className="font-medium">{inv.order_no ?? '—'}</span></div>
                 <div>Order Date: <span className="font-medium">{inv.order_date ?? '—'}</span></div>
@@ -279,7 +283,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
 
             {/* QR (optional) */}
             {qrBlock && (
-              <div className="col-span-6 border rounded-lg p-3 avoid-break">
+              <div className="col-span-6 border rounded-lg p-3 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="text-[12px] font-semibold mb-1">Payment</div>
                 {qrBlock}
               </div>
@@ -289,36 +293,41 @@ export default function PrintPage({ params }: { params: { id: string } }) {
 
         {/* Items Table */}
         <div className="px-6 mt-4">
-          <div className="border rounded-xl overflow-hidden">
-            <table className="w-full tbl text-[11.5px]">
-              <thead className="bg-neutral-50">
+          <div className="border rounded-xl overflow-hidden dark:border-neutral-700">
+            <table className="w-full tbl text-[11.5px] text-neutral-900 dark:text-neutral-100">
+              <thead className="bg-neutral-50 dark:bg-neutral-800/60">
                 <tr className="text-left">
-                  <th className="p-2.5 border-b">S/N</th>
-                  <th className="p-2.5 border-b">Description</th>
-                  <th className="p-2.5 border-b text-right">Unit Price</th>
-                  <th className="p-2.5 border-b text-right">Qty</th>
-                  <th className="p-2.5 border-b text-right">Net</th>
-                  <th className="p-2.5 border-b text-right">Tax %</th>
-                  <th className="p-2.5 border-b">Tax Type</th>
-                  <th className="p-2.5 border-b text-right">Tax Amt</th>
-                  <th className="p-2.5 border-b text-right">Total</th>
+                  <th className="p-2.5 border-b dark:border-neutral-700">S/N</th>
+                  <th className="p-2.5 border-b dark:border-neutral-700">Description</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Unit Price</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Qty</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Net</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Tax %</th>
+                  <th className="p-2.5 border-b dark:border-neutral-700">Tax Type</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Tax Amt</th>
+                  <th className="p-2.5 border-b text-right dark:border-neutral-700">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {inv.invoice_items.map((it, idx) => (
-                  <tr key={idx} className={idx % 2 ? 'bg-white' : 'bg-neutral-50/40'}>
-                    <td className="p-2.5 border-t align-top">{idx + 1}</td>
-                    <td className="p-2.5 border-t align-top">
+                  <tr
+                    key={idx}
+                    className={idx % 2
+                      ? 'bg-white dark:bg-neutral-900'
+                      : 'bg-neutral-50/60 dark:bg-neutral-800/40'}
+                  >
+                    <td className="p-2.5 border-t dark:border-neutral-700 align-top">{idx + 1}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 align-top">
                       <div className="font-medium">{it.description}</div>
-                      {it.hsn_sac && <div className="text-[10px] text-neutral-500 mt-0.5">HSN/SAC: {it.hsn_sac}</div>}
+                      {it.hsn_sac && <div className="text-[10px] text-neutral-500 dark:text-neutral-300 mt-0.5">HSN/SAC: {it.hsn_sac}</div>}
                     </td>
-                    <td className="p-2.5 border-t text-right align-top">₹ {it.unit_price.toFixed(2)}</td>
-                    <td className="p-2.5 border-t text-right align-top">{it.quantity}</td>
-                    <td className="p-2.5 border-t text-right align-top">₹ {it.net_amount.toFixed(2)}</td>
-                    <td className="p-2.5 border-t text-right align-top">{it.tax_rate}%</td>
-                    <td className="p-2.5 border-t align-top uppercase">{it.tax_type.replace('_',' + ').toUpperCase()}</td>
-                    <td className="p-2.5 border-t text-right align-top">₹ {it.tax_amount.toFixed(2)}</td>
-                    <td className="p-2.5 border-t text-right align-top">₹ {it.line_total.toFixed(2)}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">₹ {it.unit_price.toFixed(2)}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">{it.quantity}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">₹ {it.net_amount.toFixed(2)}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">{it.tax_rate}%</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 align-top uppercase">{it.tax_type.replace('_',' + ').toUpperCase()}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">₹ {it.tax_amount.toFixed(2)}</td>
+                    <td className="p-2.5 border-t dark:border-neutral-700 text-right align-top">₹ {it.line_total.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -330,13 +339,13 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         <div className="px-6 mt-4 mb-6">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-7 text-[11.5px]">
-              <div className="border rounded-lg p-3 avoid-break">
+              <div className="border rounded-lg p-3 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="text-[12px] font-semibold mb-1">Amount in Words</div>
                 <div className="italic">{amountWords}</div>
               </div>
 
               {/* Terms (optional) */}
-              <div className="border rounded-lg p-3 mt-3 text-[10.5px] text-neutral-700 avoid-break">
+              <div className="border rounded-lg p-3 mt-3 text-[10.5px] text-neutral-700 dark:text-neutral-300 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="font-semibold mb-1">Terms &amp; Notes</div>
                 <ul className="list-disc ml-4 space-y-0.5">
                   <li>Goods once sold will not be taken back.</li>
@@ -347,21 +356,21 @@ export default function PrintPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="col-span-5">
-              <div className="border rounded-lg p-3 text-[12px] space-y-1 avoid-break">
+              <div className="border rounded-lg p-3 text-[12px] space-y-1 avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="flex justify-between"><span>Subtotal</span><span>₹ {inv.subtotal.toFixed(2)}</span></div>
                 {inv.discount_amount ? <div className="flex justify-between"><span>Discount</span><span>- ₹ {inv.discount_amount.toFixed(2)}</span></div> : null}
                 {inv.shipping_amount ? <div className="flex justify-between"><span>Shipping</span><span>₹ {inv.shipping_amount.toFixed(2)}</span></div> : null}
                 {inv.tax_cgst ? <div className="flex justify-between"><span>CGST</span><span>₹ {inv.tax_cgst.toFixed(2)}</span></div> : null}
                 {inv.tax_sgst ? <div className="flex justify-between"><span>SGST</span><span>₹ {inv.tax_sgst.toFixed(2)}</span></div> : null}
                 {inv.tax_igst ? <div className="flex justify-between"><span>IGST</span><span>₹ {inv.tax_igst.toFixed(2)}</span></div> : null}
-                <div className="border-t pt-2 mt-1 flex justify-between text-[13px] font-semibold">
+                <div className="border-t dark:border-neutral-700 pt-2 mt-1 flex justify-between text-[13px] font-semibold">
                   <span>Total Value (in numbers)</span>
                   <span>₹ {inv.grand_total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Signature */}
-              <div className="border rounded-lg p-3 mt-3 text-[12px] avoid-break">
+              <div className="border rounded-lg p-3 mt-3 text-[12px] avoid-break bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                 <div className="font-semibold">For Mugaworld Private Limited</div>
                 <div className="h-14" />
                 <div className="text-right text-[12px]">Authorised Signatory</div>
@@ -371,7 +380,7 @@ export default function PrintPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-4 text-[10px] text-neutral-500 footer-note">
+        <div className="px-6 pb-4 text-[10px] text-neutral-500 dark:text-neutral-400 footer-note">
           <div className="flex justify-between">
             <div>Printed on {new Date().toLocaleString()}</div>
             <div>Page 1 of 1</div>
@@ -381,3 +390,4 @@ export default function PrintPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
