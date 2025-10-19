@@ -202,7 +202,7 @@ export default function NewInvoicePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/PNG copy copy.png"        // <-- keep your path, or swap to a no-circle asset if needed
                  alt="MugaWorld"
-                 className="h-6 w-6 md:h-7 md:w-7 object-contain" />
+                 className="h-10 w-10 md:h-12 md:w-12 object-contain" />
             <div>
               <div className="text-lg font-semibold tracking-wide">Create Invoice</div>
               <div className="text-xs">Mugaworld • Tax Invoice / Bill of Supply / Cash Memo</div>
