@@ -200,7 +200,9 @@ export default function NewInvoicePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/PNG copy copy.png" alt="Muga World" className="h-10 w-10 rounded-full ring-2 ring-[#D7A444]" />
+            <img src="/PNG copy copy.png"        // <-- keep your path, or swap to a no-circle asset if needed
+                 alt="MugaWorld"
+                 className="h-6 w-6 md:h-7 md:w-7 object-contain" />
             <div>
               <div className="text-lg font-semibold tracking-wide">Create Invoice</div>
               <div className="text-xs">Mugaworld • Tax Invoice / Bill of Supply / Cash Memo</div>
