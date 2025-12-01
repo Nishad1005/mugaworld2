@@ -260,7 +260,7 @@ function CaseStudiesSnap() {
   ];
 
   return (
-    <section className="relative bg-white dark:bg-black snap-y snap-mandatory">
+    <section id="work" className="relative bg-white dark:bg-black snap-y snap-mandatory">
       {cases.map((project, idx) => (
         <CaseCard key={idx} project={project} index={idx} />
       ))}
