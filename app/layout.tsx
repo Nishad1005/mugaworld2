@@ -4,11 +4,8 @@ import type { Metadata } from 'next'
 // ⬇ Your components
 import Navbar from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-import { WhatsAppButton } from '@/components/WhatsAppButton'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/ThemeProvider'
-
-// ⬇ ADD THIS (Mascot Assistant import)
 import MugaMascotAssistant from '@/components/MugaMascotAssistant'
 
 // ──────────────────────────── SEO SETTINGS ───────────────────────────── //
@@ -53,10 +50,9 @@ export default function RootLayout({
 
           {/* 🔻 Footer & Global UI */}
           <Footer />
-          <WhatsAppButton />
           <Toaster />
 
-          {/* 🦏 🟠 Floating Assistant Mascot (Appears on every page) */}
+          {/* 🦏 Floating Assistant Mascot (Appears on every page) */}
           <MugaMascotAssistant />
 
         </ThemeProvider>
