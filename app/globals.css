@@ -5,117 +5,389 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #F7EDD5;
-  --text: #1B1B1B;
-  --sub: rgba(0, 0, 0, 0.78);
-  --gold: #D9B77C;
-  --card: #FFFFFF;
-}
+@layer base {
+  :root {
+    --gold: 42 68% 56%;
+    --red: 354 64% 47%;
+    --background: 248 94% 96%;
+    --foreground: 29 13% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 29 13% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 29 13% 11%;
+    --primary: 42 68% 56%;
+    --primary-foreground: 29 13% 11%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 29 13% 11%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 354 64% 47%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 42 68% 56%;
+    --radius: 0.5rem;
+    --brand-gold: #D9B77C;
+    --brand-red:  #E03631;
+    --brand-ink:  #1D1D1D;
+    --brand-silk-cream: #F8EDD3;
+    --brand-ivory: #FFFEF2;
+    --brand-line: #E6E6E6;
+  }
 
-[data-theme="dark"] {
-  --bg: #0F0F0F;
-  --text: #FFF9E7;
-  --sub: rgba(255, 249, 231, 0.72);
-  --gold: #E0C388;
-  --card: #1A1A1A;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: background 0.55s ease, color 0.55s ease;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-}
-
-.h1-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(48px, 10vw, 118px);
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(48px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.grain-texture::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.03;
-  pointer-events: none;
-  z-index: 1;
-}
-
-[data-theme="dark"] .grain-texture::before {
-  opacity: 0.08;
-  mix-blend-mode: soft-light;
-}
-
-@media (max-width: 768px) {
-  .h1-title {
-    font-size: clamp(40px, 12vw, 80px);
+  .dark {
+    --background: 29 13% 11%;
+    --foreground: 40 35% 92%;
+    --card: 29 13% 11%;
+    --card-foreground: 40 35% 92%;
+    --popover: 29 13% 11%;
+    --popover-foreground: 40 35% 92%;
+    --primary: 42 68% 56%;
+    --primary-foreground: 29 13% 11%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 40 35% 92%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 354 64% 47%;
+    --accent-foreground: 40 35% 92%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 40 35% 92%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 42 68% 56%;
+    --brand-line: #2A2A2A;
   }
 }
 
-@media (max-width: 640px) {
-  .reveal {
-    transform: translateY(24px);
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 }
 
-button {
-  -webkit-tap-highlight-color: transparent;
+/* Brand focus ring */
+:where(input, select, textarea, button, [role="button"]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-gold) 40%, transparent);
+  border-color: var(--brand-gold);
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+/* Card polish */
+.brand-card {
+  border: 1px solid var(--brand-line);
+  border-radius: 14px;
+  background: white;
+}
+.dark .brand-card {
+  background: #111111;
 }
 
-::selection {
-  background: var(--gold);
-  color: var(--bg);
+@layer utilities {
+  .text-muga-gold {
+    color: #D9B77C;
+  }
+
+  .bg-muga-gold {
+    background-color: #D9B77C;
+  }
+
+  .text-silk-cream {
+    color: #F8EDD3;
+  }
+
+  .bg-silk-cream {
+    background-color: #F8EDD3;
+  }
+
+  .text-charcoal {
+    color: #1D1D1D;
+  }
+
+  .bg-charcoal {
+    background-color: #1D1D1D;
+  }
+
+  .text-tea-green {
+    color: #3A614A;
+  }
+
+  .bg-tea-green {
+    background-color: #3A614A;
+  }
+
+  .text-accent-red {
+    color: #A73541;
+  }
+
+  .bg-accent-red {
+    background-color: #A73541;
+  }
+
+  .silk-texture {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .silk-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+    animation: silk-shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes silk-shimmer {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+  }
+
+  .grain-texture {
+    position: relative;
+  }
+
+  .grain-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+  }
+
+  .dark .grain-texture::before {
+    opacity: 0.08;
+    mix-blend-mode: soft-light;
+  }
+
+  .cinematic-transition {
+    transition: all 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.8s ease-out forwards;
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(60px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.55s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.55s ease-out forwards;
+  }
+
+  .text-gold {
+    color: #D4A34C;
+  }
+
+  .bg-gold {
+    background-color: #D4A34C;
+  }
+
+  .text-red {
+    color: #C1272D;
+  }
+
+  .bg-red {
+    background-color: #C1272D;
+  }
+
+  .border-gold {
+    border-color: #D4A34C;
+  }
+
+  .hover-gold:hover {
+    background-color: #D4A34C;
+  }
+}
+/* ====== Dark mode readability ====== */
+.dark .brand-card {
+  background: #0b0b0b;
+  border-color: #2a2a2a;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
+/* Make all base text readable on dark */
+.dark body,
+.dark .prose,
+.dark .page,
+.dark .brand-card {
+  color: #f2f2f2;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg);
+/* Tables/borders in dark */
+.dark table,
+.dark .tbl,
+.dark .tbl th,
+.dark .tbl td {
+  color: #f2f2f2;
+  border-color: #3a3a3a !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--gold);
-  border-radius: 4px;
+/* ====== Print: force real black text ====== */
+@media print {
+  * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Keep white paper */
+  html, body, .page {
+    background: #fff !important;
+  }
+  /* Visible borders in print */
+  table, .tbl, .tbl th, .tbl td, .border, .rounded-lg, .rounded-xl {
+    border-color: #000 !important;
+  }
+  /* Don’t fade muted text when printing */
+  .text-neutral-500, .text-neutral-600, .text-muted-foreground {
+    color: #000 !important;
+  }
+}
+/* ========== INVOICE ALWAYS-LIGHT SURFACE ========== */
+/* Force invoice/form areas to stay white+black even in dark mode */
+.invoice-surface {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text);
+/* Make borders and cards look clean on a white surface */
+.invoice-surface .border,
+.invoice-surface .rounded-md,
+.invoice-surface .rounded-lg,
+.invoice-surface .rounded-xl,
+.invoice-surface .card,
+.invoice-surface .page {
+  border-color: #e5e7eb !important; /* neutral-200 */
+  background: #ffffff !important;
+  color: #0a0a0a !important;
 }
+
+/* Inputs should stay white with dark text regardless of theme */
+.invoice-surface input,
+.invoice-surface select,
+.invoice-surface textarea {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Table text/borders on white */
+.invoice-surface table,
+.invoice-surface th,
+.invoice-surface td {
+  color: #0a0a0a !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Ensure muted text stays readable on white */
+.invoice-surface .text-muted-foreground,
+.invoice-surface .text-neutral-500,
+.invoice-surface .text-neutral-600,
+.invoice-surface .text-neutral-700 {
+  color: #0a0a0a !important;
+}
+
+/* PRINT: force white paper and black ink for the invoice only */
+@media print {
+  .invoice-surface,
+  .invoice-surface * {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .invoice-surface table,
+  .invoice-surface th,
+  .invoice-surface td,
+  .invoice-surface .border {
+    border-color: #000000 !important;
+  }
+}
+/* ========== FINAL PRINT LOCKDOWN ========== */
+@media print {
+  /* Print only the invoice canvas */
+  body * { visibility: hidden !important; }
+  .print-root, .print-root * { visibility: visible !important; }
+
+  /* Pure white page; let user choose paper size */
+  html, body { background: #ffffff !important; }
+  @page { size: auto; margin: 10mm; } /* you can tweak the 10mm */
+
+  /* Match on-screen colors/borders exactly */
+  .print-root, .print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: inherit !important;
+    color: inherit !important;
+    border-color: inherit !important;
+  }
+
+  /* Kill outer frame/shadow/radius so no “black bars” appear */
+  .sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Absolutely hide any controls just in case they lack .no-print */
+  .no-print,
+  button,
+  [data-no-print],
+  header,
+  footer,
+  nav { display: none !important; visibility: hidden !important; }
+}
+
+
+
+
+
