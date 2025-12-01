@@ -9,7 +9,6 @@ export default function Home() {
   return (
     <div className="relative overflow-hidden">
       <SplitHeroSection />
-      <VideoShowcaseSection />
       <ExperienceStrip />
       <ServicesGrid />
       <LoopingTextStrip />
@@ -89,50 +88,6 @@ function SplitHeroSection() {
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce-slow">
         <div className="w-6 h-10 border-2 border-[#1D1D1D]/30 dark:border-[#FFFEF2]/30 rounded-full p-1">
           <div className="w-1.5 h-2 bg-[#D9B77C] rounded-full mx-auto animate-scroll"></div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function VideoShowcaseSection() {
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  return (
-    <section className="relative py-32 bg-white dark:bg-black">
-      <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-7xl font-light text-[#1D1D1D] dark:text-[#FFFEF2] mb-6">
-            See Our Work in Motion
-          </h2>
-          <p className="text-xl text-[#1D1D1D]/70 dark:text-[#FFFEF2]/70 max-w-2xl mx-auto">
-            Experience the intersection of culture and design
-          </p>
-        </div>
-
-        <div className="relative group">
-          <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-[#F8EDD3] to-[#D9B77C]/30 dark:from-[#1D1D1D] dark:to-[#D9B77C]/20 shadow-2xl">
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=1&modestbranding=1&rel=0"
-              title="MUGA WORLD Showcase"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 border-4 border-[#D9B77C]/20 rounded-3xl group-hover:border-[#D9B77C]/40 cinematic-transition"></div>
-            </div>
-          </div>
-
-          <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-[#D9B77C] rounded-full opacity-10 blur-3xl group-hover:opacity-20 cinematic-transition"></div>
-          <div className="absolute -top-8 -left-8 w-32 h-32 bg-[#3A614A] rounded-full opacity-10 blur-3xl group-hover:opacity-20 cinematic-transition"></div>
-        </div>
-
-        <div className="mt-12 text-center">
-          <p className="text-sm text-[#1D1D1D]/60 dark:text-[#FFFEF2]/60 italic">
-            Replace this video with your studio showcase reel
-          </p>
         </div>
       </div>
     </section>
