@@ -110,7 +110,7 @@ export default function MugaMascotAssistant() {
                         backdrop-blur-lg dark:bg-slate-900/95 dark:border-slate-700">
           {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white">
-            <img src="/muga-mascot.png" className="h-7 w-7 rounded-full" />
+            <img src="/muga-mascot-clean-mirrored-removebg-preview.png" className="h-7 w-7 rounded-full" />
             <span className="font-semibold">Muga Rhino</span>
             <button className="ml-auto text-sm" onClick={toggleChat}>
               ✕
