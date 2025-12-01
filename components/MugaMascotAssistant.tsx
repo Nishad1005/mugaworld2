@@ -62,9 +62,9 @@ export default function MugaMascotAssistant() {
         className="fixed bottom-5 right-5 z-50 cursor-pointer outline-none"
       >
         <img
-          src="/muga-mascot-mirrored.png"
+          src="/muga-mascot-clean-mirrored.png"
           alt="Muga Rhino Assistant"
-          className="h-40 w-auto drop-shadow-xl transition-transform duration-300 hover:scale-110 animate-muga-float"
+          className="h-40 w-auto drop-shadow-xl transition-transform duration-300 hover:scale-110 animate-mascotFLoat"
         />
       </button>
 
