@@ -1,189 +1,435 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShoppingBag, Laptop, ArrowRight, Sparkles, Heart, Globe } from 'lucide-react';
+import { ArrowRight, Heart, Sparkles } from 'lucide-react';
 
 export default function Home() {
+  const [activeFilter, setActiveFilter] = useState('all');
+
   return (
-    <div>
-      <section className="relative bg-gradient-to-br from-amber-50 via-white to-red-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A34C' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
+    <div className="overflow-hidden">
+      <HeroSection />
+      <WhyMugaSection />
+      <WeaveJourneySection />
+      <ArtisansSection />
+      <ProductCollectionSection activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+      <AssamExperienceSection />
+      <ImpactSection />
+      <FinalCTASection />
+    </div>
+  );
+}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center bg-gold/10 border border-gold/20 rounded-full px-4 py-2 mb-6">
-              <Sparkles className="h-4 w-4 text-gold mr-2" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Authentic Heritage, Modern Excellence</span>
-            </div>
+function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-silk-cream via-white to-muga-gold/20">
+      <div className="absolute inset-0 silk-texture opacity-30" />
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
-              Handmade from Assam.
-              <br />
-              <span className="text-gold">Digital Solutions</span> for the World.
-            </h1>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(217,183,124,0.1),transparent_50%)]" />
 
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Experience the rich heritage of Assamese craftsmanship while accessing cutting-edge digital services
-              that power your business growth.
-            </p>
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-muga-gold/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-silk-cream rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/shop">
-                <Button size="lg" className="bg-gold hover:bg-gold/90 text-gray-900 font-bold px-8 py-6 text-lg">
-                  <ShoppingBag className="mr-2 h-5 w-5" />
-                  Shop Now
-                </Button>
-              </Link>
-              <Link href="/services">
-                <Button size="lg" variant="outline" className="border-2 border-gray-900 dark:border-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-bold px-8 py-6 text-lg">
-                  <Laptop className="mr-2 h-5 w-5" />
-                  Get a Free Consultation
-                </Button>
-              </Link>
-            </div>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
+        <div className="space-y-8 animate-fade-in">
+          <h1 className="text-7xl md:text-8xl lg:text-9xl font-bold text-charcoal leading-none tracking-tight">
+            MUGA WORLD
+          </h1>
+
+          <p className="text-2xl md:text-3xl text-charcoal/70 font-light tracking-wide max-w-3xl mx-auto">
+            Where Assam's Heritage Becomes Modern Luxury.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+            <Link href="/about">
+              <Button
+                size="lg"
+                className="bg-charcoal hover:bg-charcoal/90 text-white font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+              >
+                Explore Craftsmanship
+              </Button>
+            </Link>
+            <Link href="/shop">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-charcoal text-charcoal hover:bg-charcoal hover:text-white font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+              >
+                Shop Muga
+              </Button>
+            </Link>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="py-20 bg-white dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Discover Authentic Assamese Handmade Products
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                From exquisite Muga silk textiles to intricate bamboo crafts and aromatic Assam tea,
-                each product tells a story of tradition, skill, and cultural heritage passed down through generations.
+      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <div className="w-6 h-10 border-2 border-charcoal/30 rounded-full flex items-start justify-center p-2">
+          <div className="w-1 h-3 bg-charcoal/30 rounded-full" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WhyMugaSection() {
+  const lines = [
+    "Born from the Soil of Assam.",
+    "Woven with Hands that Carry Generations.",
+    "Crafted to Last a Lifetime."
+  ];
+
+  return (
+    <section className="relative min-h-screen flex items-center justify-center bg-charcoal overflow-hidden">
+      <div className="absolute inset-0 silk-texture opacity-10" />
+
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
+        <div className="space-y-12">
+          <h2 className="text-5xl md:text-6xl font-bold text-muga-gold mb-16">
+            Why Muga is Gold
+          </h2>
+
+          {lines.map((line, index) => (
+            <div
+              key={index}
+              className="opacity-0 animate-stagger-fade-in"
+              style={{ animationDelay: `${index * 0.3}s`, animationFillMode: 'forwards' }}
+            >
+              <p className="text-3xl md:text-4xl text-silk-cream font-light leading-relaxed tracking-wide">
+                {line}
               </p>
-              <Link href="/shop">
-                <Button className="bg-gold hover:bg-gold/90 text-gray-900 font-bold">
-                  Explore Our Collection
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-gold/10 rounded-lg flex items-center justify-center mb-2">
-                    <Heart className="h-6 w-6 text-gold" />
-                  </div>
-                  <CardTitle className="text-lg">Handcrafted</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>Every piece is made with love and traditional techniques</CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-red/10 rounded-lg flex items-center justify-center mb-2">
-                    <Sparkles className="h-6 w-6 text-red" />
-                  </div>
-                  <CardTitle className="text-lg">Premium Quality</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>Authentic materials and superior craftsmanship</CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-gold/10 rounded-lg flex items-center justify-center mb-2">
-                    <Globe className="h-6 w-6 text-gold" />
-                  </div>
-                  <CardTitle className="text-lg">Worldwide Shipping</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>Delivering Assamese heritage to your doorstep</CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-red/10 rounded-lg flex items-center justify-center mb-2">
-                    <ShoppingBag className="h-6 w-6 text-red" />
-                  </div>
-                  <CardTitle className="text-lg">Curated Selection</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription>Hand-picked products from skilled artisans</CardDescription>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
 
-      <section className="py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="order-2 md:order-1">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { title: 'Digital Marketing', desc: 'ROI-focused campaigns' },
-                  { title: 'Web Development', desc: 'Modern, scalable solutions' },
-                  { title: 'Brand Strategy', desc: 'Identity & positioning' },
-                  { title: 'Lead Generation', desc: 'Quality pipeline growth' },
-                ].map((service, idx) => (
-                  <Card key={idx} className="hover:shadow-lg transition-shadow hover:border-gold">
-                    <CardHeader>
-                      <CardTitle className="text-base">{service.title}</CardTitle>
-                      <CardDescription className="text-sm">{service.desc}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                ))}
+      <style jsx>{`
+        @keyframes stagger-fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-stagger-fade-in {
+          animation: stagger-fade-in 1s ease-out;
+        }
+      `}</style>
+    </section>
+  );
+}
+
+function WeaveJourneySection() {
+  const journeySteps = [
+    { title: 'Cocoon', description: 'Golden threads begin their journey in nature\'s embrace' },
+    { title: 'Yarn', description: 'Skilled hands transform silk into delicate strands' },
+    { title: 'Dye', description: 'Natural colors bring life to ancient traditions' },
+    { title: 'Weave', description: 'The loom dances as patterns emerge' },
+    { title: 'Fashion', description: 'Heritage meets contemporary elegance' }
+  ];
+
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-white to-silk-cream">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-charcoal text-center mb-20">
+          The Weave Journey
+        </h2>
+
+        <div className="flex overflow-x-auto gap-8 pb-8 scrollbar-hide snap-x snap-mandatory">
+          {journeySteps.map((step, index) => (
+            <div
+              key={index}
+              className="min-w-[80vw] md:min-w-[400px] h-[500px] relative group snap-center"
+            >
+              <div className="h-full bg-gradient-to-br from-muga-gold/20 to-silk-cream rounded-3xl p-8 flex flex-col justify-end transition-all duration-500 hover:scale-105 hover:shadow-2xl cursor-pointer">
+                <div className="absolute top-8 left-8 text-8xl font-bold text-muga-gold/20">
+                  {index + 1}
+                </div>
+
+                <h3 className="text-4xl font-bold text-charcoal mb-4">
+                  {step.title}
+                </h3>
+                <p className="text-lg text-charcoal/70 leading-relaxed">
+                  {step.description}
+                </p>
               </div>
             </div>
-
-            <div className="order-1 md:order-2">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Digital Solutions That Drive Results
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                Transform your business with our comprehensive digital services. From strategic marketing to
-                custom development, we deliver solutions that help you reach your goals and grow your brand.
-              </p>
-              <Link href="/services">
-                <Button className="bg-red hover:bg-red/90 text-white font-bold">
-                  View All Services
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      <section className="py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Experience the MUGA WORLD Difference?
+function ArtisansSection() {
+  const artisans = [
+    { name: 'Rita Das', role: '19 years weaving Muga in Sualkuchi', village: 'Sualkuchi' },
+    { name: 'Ramen Nath', role: 'Master dyer, 3rd generation craftsman', village: 'Kamrup' },
+    { name: 'Malati Bora', role: 'Silk spinner and pattern keeper', village: 'Majuli' },
+    { name: 'Keshab Gogoi', role: 'Loom craftsman for 25 years', village: 'Jorhat' }
+  ];
+
+  return (
+    <section className="relative py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-charcoal text-center mb-20">
+          Artisans of Assam
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {artisans.map((artisan, index) => (
+            <div
+              key={index}
+              className="group relative h-80 bg-gradient-to-br from-silk-cream to-muga-gold/30 rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl"
+            >
+              <div className="absolute inset-0 bg-charcoal/90 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out p-8 flex flex-col justify-center">
+                <h3 className="text-3xl font-bold text-muga-gold mb-4">
+                  {artisan.name}
+                </h3>
+                <p className="text-xl text-silk-cream mb-2">
+                  {artisan.role}
+                </p>
+                <p className="text-lg text-silk-cream/70">
+                  {artisan.village}, Assam
+                </p>
+              </div>
+
+              <div className="p-8 flex items-end h-full">
+                <div>
+                  <p className="text-2xl font-bold text-charcoal">
+                    {artisan.name}
+                  </p>
+                  <p className="text-sm text-charcoal/60 mt-2">
+                    Hover to learn more
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductCollectionSection({ activeFilter, setActiveFilter }: { activeFilter: string, setActiveFilter: (filter: string) => void }) {
+  const filters = ['all', 'Pure Muga', 'Natural Dye', 'Golden Weave', 'Specialty'];
+
+  const products = [
+    { name: 'Classic Muga Mekhela', category: 'Pure Muga', price: '₹15,000' },
+    { name: 'Natural Dye Stole', category: 'Natural Dye', price: '₹8,500' },
+    { name: 'Golden Weave Saree', category: 'Golden Weave', price: '₹25,000' },
+    { name: 'Heritage Shawl', category: 'Specialty', price: '₹12,000' },
+    { name: 'Traditional Chaddar', category: 'Pure Muga', price: '₹18,000' },
+    { name: 'Contemporary Dupatta', category: 'Golden Weave', price: '₹9,500' }
+  ];
+
+  const filteredProducts = activeFilter === 'all'
+    ? products
+    : products.filter(p => p.category === activeFilter);
+
+  return (
+    <section className="relative py-32 bg-gradient-to-b from-silk-cream to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-charcoal text-center mb-12">
+          Product Collection
+        </h2>
+
+        <div className="flex flex-wrap justify-center gap-4 mb-16">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-6 py-3 rounded-full font-medium transition-all ${
+                activeFilter === filter
+                  ? 'bg-charcoal text-white'
+                  : 'bg-white text-charcoal border-2 border-charcoal/20 hover:border-charcoal'
+              }`}
+            >
+              {filter.charAt(0).toUpperCase() + filter.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12">
+          {filteredProducts.map((product, index) => (
+            <div
+              key={index}
+              className="group relative h-[500px] bg-gradient-to-br from-white to-silk-cream rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl"
+            >
+              <div className="absolute top-6 right-6 z-10">
+                <button className="w-12 h-12 rounded-full bg-white/80 backdrop-blur flex items-center justify-center hover:bg-white transition-colors">
+                  <Heart className="w-5 h-5 text-charcoal" />
+                </button>
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-br from-muga-gold/30 to-transparent group-hover:scale-110 transition-transform duration-700" />
+
+              <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-white via-white/95 to-transparent">
+                <h3 className="text-2xl font-bold text-charcoal mb-2">
+                  {product.name}
+                </h3>
+                <p className="text-lg text-charcoal/60 mb-3">
+                  {product.category}
+                </p>
+                <p className="text-3xl font-bold text-muga-gold">
+                  {product.price}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mt-16">
+          <Link href="/shop">
+            <Button
+              size="lg"
+              className="bg-charcoal hover:bg-charcoal/90 text-white font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+            >
+              View Full Collection
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AssamExperienceSection() {
+  const experiences = [
+    { title: 'Tea Gardens', color: 'from-tea-green to-tea-green/60' },
+    { title: 'Majuli Masks', color: 'from-accent-red to-accent-red/60' },
+    { title: 'Ahom Motifs', color: 'from-muga-gold to-muga-gold/60' },
+    { title: 'Brahmaputra Evenings', color: 'from-tea-green/80 to-muga-gold/60' }
+  ];
+
+  return (
+    <section className="relative py-32 bg-charcoal overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-muga-gold text-center mb-20">
+          Assam Experience
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {experiences.map((exp, index) => (
+            <div
+              key={index}
+              className={`relative h-80 bg-gradient-to-br ${exp.color} rounded-3xl overflow-hidden group cursor-pointer`}
+            >
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <h3 className="text-4xl md:text-5xl font-bold text-white text-center px-8">
+                  {exp.title}
+                </h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ImpactSection() {
+  const stats = [
+    { number: '500+', label: 'Artisan Families Supported' },
+    { number: '100%', label: 'Natural & Sustainable' },
+    { number: '50+', label: 'Villages Empowered' },
+    { number: '25', label: 'Years of Heritage' }
+  ];
+
+  return (
+    <section className="relative py-32 bg-gradient-to-br from-silk-cream via-white to-muga-gold/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-5xl md:text-6xl font-bold text-charcoal text-center mb-12">
+          Craft That Sustains Culture, Nature & Communities.
+        </h2>
+
+        <div className="grid md:grid-cols-4 gap-8 mt-20">
+          {stats.map((stat, index) => (
+            <div key={index} className="text-center">
+              <div className="text-5xl md:text-6xl font-bold text-muga-gold mb-4">
+                {stat.number}
+              </div>
+              <p className="text-lg text-charcoal/70">
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTASection() {
+  return (
+    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-charcoal via-charcoal to-tea-green">
+      <div className="absolute inset-0 silk-texture opacity-20" />
+
+      <div className="absolute inset-0">
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-muga-gold/20 to-transparent animate-wave" />
+      </div>
+
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-20">
+        <div className="space-y-10">
+          <Sparkles className="w-16 h-16 text-muga-gold mx-auto mb-8" />
+
+          <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+            Begin Your Muga Journey
           </h2>
-          <p className="text-lg text-gray-300 mb-10 leading-relaxed">
-            Whether you're looking for authentic handmade treasures or need expert digital solutions,
-            we're here to help you succeed.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
             <Link href="/shop">
-              <Button size="lg" className="bg-gold hover:bg-gold/90 text-gray-900 font-bold px-8">
-                Start Shopping
+              <Button
+                size="lg"
+                className="bg-muga-gold hover:bg-muga-gold/90 text-charcoal font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+              >
+                Shop Muga Now
+              </Button>
+            </Link>
+            <Link href="/about">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-white text-white hover:bg-white hover:text-charcoal font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+              >
+                Visit Assam Store
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" className="bg-white hover:bg-gray-100 text-gray-900 font-bold px-8">
-                Contact Us
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-muga-gold text-muga-gold hover:bg-muga-gold hover:text-charcoal font-medium px-10 py-7 text-lg rounded-full transition-all hover:scale-105"
+              >
+                Custom Weave Inquiry
               </Button>
             </Link>
           </div>
+
+          <p className="text-2xl text-silk-cream font-light tracking-wide pt-12">
+            Muga World — A Fabric, A Legacy.
+          </p>
         </div>
-      </section>
-    </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes wave {
+          0%, 100% { transform: translateY(0) scaleY(1); }
+          50% { transform: translateY(-20px) scaleY(1.1); }
+        }
+        .animate-wave {
+          animation: wave 6s ease-in-out infinite;
+        }
+      `}</style>
+    </section>
   );
 }

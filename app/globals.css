@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -66,11 +66,12 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Lato', sans-serif;
+    font-family: 'DM Sans', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
+    font-family: 'Playfair Display', serif;
   }
 }
 
@@ -92,6 +93,64 @@
 }
 
 @layer utilities {
+  .text-muga-gold {
+    color: #D9B77C;
+  }
+
+  .bg-muga-gold {
+    background-color: #D9B77C;
+  }
+
+  .text-silk-cream {
+    color: #F8EDD3;
+  }
+
+  .bg-silk-cream {
+    background-color: #F8EDD3;
+  }
+
+  .text-charcoal {
+    color: #1D1D1D;
+  }
+
+  .bg-charcoal {
+    background-color: #1D1D1D;
+  }
+
+  .text-tea-green {
+    color: #3A614A;
+  }
+
+  .bg-tea-green {
+    background-color: #3A614A;
+  }
+
+  .text-accent-red {
+    color: #A73541;
+  }
+
+  .bg-accent-red {
+    background-color: #A73541;
+  }
+
+  .silk-texture {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .silk-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+    animation: silk-shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes silk-shimmer {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+  }
+
   .text-gold {
     color: #D4A34C;
   }
