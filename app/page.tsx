@@ -23,6 +23,10 @@ function HeroSection() {
     <section className="relative min-h-screen flex items-center justify-center grain-texture bg-[#F8EDD3] dark:bg-[#1D1D1D]">
       <div className="max-w-7xl mx-auto px-6 sm:px-12 lg:px-16 text-center py-20">
         <div className="space-y-12 animate-fade-in-up">
+          <div className="flex items-center justify-center mb-8">
+            <img src="/PNG copy copy.png" alt="MUGA WORLD" className="w-32 h-32 object-contain" />
+          </div>
+
           <h1
             className="font-normal text-[#1D1D1D] dark:text-[#FFFEF2] leading-[0.95] tracking-tight"
             style={{ fontSize: 'clamp(64px, 10vw, 118px)' }}
