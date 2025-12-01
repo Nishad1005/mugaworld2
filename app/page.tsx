@@ -122,11 +122,11 @@ function BrandStatementSection() {
 
 function ServicesStripSection() {
   const services = [
-    { title: 'Brand Identity', subtitle: '+ Strategy' },
-    { title: 'UI/UX', subtitle: '+ Web Systems' },
-    { title: 'Packaging', subtitle: '+ Print' },
-    { title: 'Design', subtitle: 'Consulting' },
-    { title: 'Creative', subtitle: 'Campaigns' }
+    { title: 'Brand Identity + Strategy' },
+    { title: 'UI/UX + Web Systems' },
+    { title: 'Packaging + Print' },
+    { title: 'Design Consulting' },
+    { title: 'Creative Campaigns' }
   ];
 
   return (
@@ -144,12 +144,9 @@ function ServicesStripSection() {
                   <div className="absolute inset-0 shadow-[inset_0_0_0_1px_#D9B77C] dark:shadow-[inset_0_0_0_1px_#D9B77C] opacity-30 dark:opacity-50"></div>
                 </div>
 
-                <h3 className="relative text-2xl font-semibold text-[#1D1D1D] dark:text-[#FFFEF2] mb-2">
+                <h3 className="relative text-2xl font-semibold text-[#1D1D1D] dark:text-[#FFFEF2]">
                   {service.title}
                 </h3>
-                <p className="relative text-lg text-[#1D1D1D]/60 dark:text-[#FFFEF2]/60">
-                  {service.subtitle}
-                </p>
               </div>
             </div>
           ))}
@@ -244,7 +241,7 @@ function CaseStudyFrame({ study, index }: { study: any; index: number }) {
               {study.description}
             </p>
             <Link href="/about" className="inline-flex items-center gap-2 text-lg font-medium text-[#1D1D1D] dark:text-[#FFFEF2] hover:text-[#D9B77C] dark:hover:text-[#D9B77C] cinematic-transition group">
-              See Details
+              View Case
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 cinematic-transition" />
             </Link>
           </div>
