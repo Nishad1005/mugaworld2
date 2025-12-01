@@ -35,16 +35,11 @@ export default function Navbar() {
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Left: Brand */}
         <div className="flex items-center gap-3">
-         <Link href="/" className="flex items-center gap-2" onClick={close}>
-  <Image
-    src="/PNG copy copy.png"   // ← your file inside /public
-    alt="MUGA WORLD"
-    width={32}
-    height={32}
-    className="rounded-lg"
-    priority
-  />
-  <span className="text-lg font-bold tracking-tight">MugaWorld</span>
+         <Link href="/" className="flex items-center gap-3" onClick={close}>
+  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md">
+    <span className="text-white font-bold text-xl">M</span>
+  </div>
+  <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">MugaWorld</span>
 </Link>
         </div>
 
