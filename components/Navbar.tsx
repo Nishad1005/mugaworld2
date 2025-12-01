@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+const UserMenu = dynamic(() => import('@/components/auth/UserMenu'), { ssr: false });
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
@@ -56,6 +59,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
+          <UserMenu />
           <ThemeToggle />
         </div>
 
@@ -90,6 +94,10 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          <div className="pt-4 border-t border-[#E6E6E6]/50 dark:border-[#2A2A2A]/50">
+            <UserMenu />
+          </div>
         </div>
       </div>
     </header>
