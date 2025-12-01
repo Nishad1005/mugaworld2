@@ -71,7 +71,15 @@ export default function MugaMascotAssistant() {
     hover:scale-110 hover:-rotate-3     /* 👋 Wave / greeting */
     active:scale-95                     /* click bounce */
   `}
+          
         />
+        {/* Tooltip bubble on hover */}
+  <div className="absolute bottom-44 right-0 opacity-0 group-hover:opacity-100
+                  bg-orange-600 text-white text-sm px-3 py-1 rounded-full shadow-lg
+                  transition-opacity duration-300">
+    👋 Hi there!
+  </div>
+        
       </button>
 
       {/* Chat window */}
