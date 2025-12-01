@@ -1,14 +1,21 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import Navbar from '@/components/Navbar'               // ✅ default import
+
+// ⬇ Your components
+import Navbar from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
 import { WhatsAppButton } from '@/components/WhatsAppButton'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
+// ⬇ ADD THIS (Mascot Assistant import)
+import MugaMascotAssistant from '@/components/MugaMascotAssistant'
+
+// ──────────────────────────── SEO SETTINGS ───────────────────────────── //
+
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  'https://mugaworld2.netlify.app' // fallback for local/preview
+  'https://mugaworld2.netlify.app'
 
 export const metadata: Metadata = {
   title: 'MUGA WORLD - Handmade from Assam, Digital Solutions for the World',
@@ -21,14 +28,12 @@ export const metadata: Metadata = {
     description:
       'Discover authentic Assamese handmade products and premium digital services.',
     type: 'website',
-    // You can add images here later if you have an OG image URL
-    // images: [{ url: '/og.jpg' }],
   },
-  // ✅ Use env-based absolute origin so Next can resolve OG/Twitter URLs at build
   metadataBase: new URL(siteUrl),
-  // Optional but nice: set a canonical to the homepage by default
   alternates: { canonical: '/' },
 }
+
+// ──────────────────────────── LAYOUT ───────────────────────────── //
 
 export default function RootLayout({
   children,
@@ -39,11 +44,21 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          
+          {/* 🌍 Navigation */}
           <Navbar />
+
+          {/* 📄 Page Content */}
           <main className="min-h-screen">{children}</main>
+
+          {/* 🔻 Footer & Global UI */}
           <Footer />
           <WhatsAppButton />
           <Toaster />
+
+          {/* 🦏 🟠 Floating Assistant Mascot (Appears on every page) */}
+          <MugaMascotAssistant />
+
         </ThemeProvider>
       </body>
     </html>
