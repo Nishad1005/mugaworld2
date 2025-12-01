@@ -24,6 +24,7 @@ const config: Config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -62,6 +63,7 @@ const config: Config = {
           sand: "#F5E7C9",
         },
       },
+
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -69,10 +71,13 @@ const config: Config = {
         xl: "14px",
         "2xl": "18px",
       },
+
       boxShadow: {
         brand: "0 10px 20px -8px rgba(215,164,68,.25)",
       },
+
       keyframes: {
+        // Default Shadcn
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -81,13 +86,24 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+
+        // 🦏 NEW — MUGA Rhino floating keyframe animation
+        mascotFloat: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
       },
+
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+
+        // 🦏 NEW — Floating animation available as `animate-mascotFloat`
+        mascotFloat: "mascotFloat 3s ease-in-out infinite",
       },
     },
   },
+
   plugins: [require("tailwindcss-animate")],
 };
 
